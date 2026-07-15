@@ -1,6 +1,41 @@
-# Project dependencies
+# Backend
 fastapi
 uvicorn
 pydantic
 pydantic-settings
 python-dotenv
+
+# AI
+langchain
+langgraph
+sentence-transformers
+rank_bm25
+groq
+
+# Database
+sqlalchemy
+psycopg[binary]
+motor
+pinecone
+neo4j
+
+# Web Scraping
+scrapy
+beautifulsoup4
+lxml
+langdetect
+
+# Evaluation
+ragas
+deepeval
+
+# Utilities
+httpx
+requests
+tqdm
+orjson
+pyyaml
+
+# Testing
+pytest
+pytest-asyncio

@@ -1,0 +1,121 @@
+# File: app/ingestion/sources.yaml
+# Trusted Knowledge Sources (`Milestone 8 Source Registry`)
+
+programming:
+  - name: Python Documentation
+    url: https://docs.python.org/3/
+    trust: tier1
+    priority: high
+    allowed_paths: ["/3/tutorial/", "/3/library/"]
+    excluded_paths: ["/3/whatsnew/"]
+
+  - name: FastAPI Documentation
+    url: https://fastapi.tiangolo.com/
+    trust: tier1
+    priority: high
+    allowed_paths: ["/tutorial/", "/advanced/"]
+    excluded_paths: ["/release-notes/"]
+
+  - name: LangChain Documentation
+    url: https://python.langchain.com/docs/
+    trust: tier1
+    priority: high
+    allowed_paths: ["/docs/"]
+
+  - name: LangGraph Documentation
+    url: https://langchain-ai.github.io/langgraph/
+    trust: tier1
+    priority: high
+
+  - name: SQLAlchemy Documentation
+    url: https://docs.sqlalchemy.org/en/20/
+    trust: tier1
+    priority: high
+
+  - name: PostgreSQL Documentation
+    url: https://www.postgresql.org/docs/current/
+    trust: tier1
+    priority: high
+
+  - name: MongoDB Documentation
+    url: https://www.mongodb.com/docs/manual/
+    trust: tier1
+    priority: high
+
+  - name: Neo4j Documentation
+    url: https://neo4j.com/docs/cypher-manual/current/
+    trust: tier1
+    priority: high
+
+  - name: Pinecone Documentation
+    url: https://docs.pinecone.io/
+    trust: tier1
+    priority: high
+
+  - name: Docker Documentation
+    url: https://docs.docker.com/
+    trust: tier1
+    priority: medium
+
+  - name: Git Documentation
+    url: https://git-scm.com/doc
+    trust: tier1
+    priority: medium
+
+ai_ml:
+  - name: Hugging Face Documentation
+    url: https://huggingface.co/docs
+    trust: tier1
+    priority: high
+
+  - name: PyTorch Documentation
+    url: https://pytorch.org/docs/stable/
+    trust: tier1
+    priority: high
+
+  - name: Scikit-learn Documentation
+    url: https://scikit-learn.org/stable/user_guide.html
+    trust: tier1
+    priority: high
+
+trusted_org:
+  - name: MDN Web Docs
+    url: https://developer.mozilla.org/en-US/docs/Web
+    trust: tier2
+    priority: medium
+
+  - name: NASA
+    url: https://www.nasa.gov/science/
+    trust: tier2
+    priority: low
+
+  - name: WHO
+    url: https://www.who.int/health-topics
+    trust: tier2
+    priority: low
+
+  - name: NumPy Documentation
+    url: https://numpy.org/doc/stable/
+    trust: tier2
+    priority: medium
+
+  - name: Pandas Documentation
+    url: https://pandas.pydata.org/docs/user_guide/
+    trust: tier2
+    priority: medium
+
+  - name: Matplotlib Documentation
+    url: https://matplotlib.org/stable/users/
+    trust: tier2
+    priority: medium
+
+community:
+  - name: Wikipedia AI Portal
+    url: https://en.wikipedia.org/wiki/Portal:Artificial_intelligence
+    trust: tier3
+    priority: low
+
+  - name: Carefully Selected Technical Blogs
+    url: https://lilianweng.github.io/
+    trust: tier3
+    priority: low
