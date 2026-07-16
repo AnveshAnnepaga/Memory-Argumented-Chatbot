@@ -2,6 +2,7 @@
 import asyncio
 import logging
 from typing import Any, Dict, List, Optional, Union
+import httpx
 from groq import AsyncGroq
 from app.ai.llm.base import BaseLLMProvider
 from app.core.config import settings
@@ -42,9 +43,11 @@ class GroqProvider(BaseLLMProvider):
             return False
 
         try:
+            timeout_val = getattr(settings.ai.groq, "timeout_seconds", 30)
             self.client = AsyncGroq(
                 api_key=api_key,
-                timeout=getattr(settings.ai.groq, "timeout_seconds", 30),
+                timeout=timeout_val,
+                http_client=httpx.AsyncClient(timeout=timeout_val),
             )
             stats = await self._ping_api()
             self._is_initialized = True
@@ -105,8 +108,8 @@ class GroqProvider(BaseLLMProvider):
             [{"role": "user", "content": messages}] if isinstance(messages, str) else messages
         )
         target_model = model or settings.ai.models.chat_model
-        temp = temperature if temperature is not None else settings.ai.temperature
-        tokens = max_tokens if max_tokens is not None else settings.ai.max_tokens
+        temp = temperature if temperature is not None else settings.ai.groq.temperature
+        tokens = max_tokens if max_tokens is not None else settings.ai.groq.max_tokens
 
         try:
             response = await self.client.chat.completions.create(
@@ -114,7 +117,7 @@ class GroqProvider(BaseLLMProvider):
                 messages=formatted_messages,
                 temperature=temp,
                 max_tokens=tokens,
-                timeout=timeout or settings.ai.timeout,
+                timeout=timeout or settings.ai.groq.timeout_seconds,
                 **kwargs,
             )
             choice = response.choices[0] if response.choices else None
@@ -142,7 +145,7 @@ class GroqProvider(BaseLLMProvider):
                         messages=formatted_messages,
                         temperature=temp,
                         max_tokens=tokens,
-                        timeout=timeout or settings.ai.timeout,
+                        timeout=timeout or settings.ai.groq.timeout_seconds,
                         **kwargs,
                     )
                     choice = response.choices[0] if response.choices else None

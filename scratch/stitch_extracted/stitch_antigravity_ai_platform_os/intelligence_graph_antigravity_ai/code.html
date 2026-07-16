@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Intelligence Graph | Antigravity AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Inter+Tight:wght@500;600;700;800;900&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: #0f1321;
+            overflow: hidden;
+            height: 100vh;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(15, 19, 33, 0.7);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(59, 73, 76, 0.2);
+        }
+        .graph-canvas {
+            background-image: radial-gradient(circle at 2px 2px, rgba(132, 147, 150, 0.1) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+        @keyframes pulse-glow {
+            0% { filter: drop-shadow(0 0 2px rgba(0, 229, 255, 0.4)); }
+            50% { filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.7)); }
+            100% { filter: drop-shadow(0 0 2px rgba(0, 229, 255, 0.4)); }
+        }
+        .active-node {
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+        .node-ring {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 25;
+            transition: stroke-dashoffset 0.6s ease;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#00626e",
+                        "surface": "#0f1321",
+                        "on-surface-variant": "#bac9cc",
+                        "secondary-fixed-dim": "#d2bbff",
+                        "surface-container-low": "#171b2a",
+                        "on-secondary-container": "#c9aeff",
+                        "primary-fixed": "#9cf0ff",
+                        "error-container": "#93000a",
+                        "inverse-surface": "#dfe1f6",
+                        "surface-variant": "#303444",
+                        "surface-container": "#1b1f2e",
+                        "on-primary-fixed": "#001f24",
+                        "on-background": "#dfe1f6",
+                        "primary-container": "#00e5ff",
+                        "surface-container-high": "#262939",
+                        "on-tertiary-container": "#006645",
+                        "on-secondary-fixed": "#25005a",
+                        "tertiary": "#a8ffd2",
+                        "surface-dim": "#0f1321",
+                        "on-primary-fixed-variant": "#004f58",
+                        "surface-bright": "#353849",
+                        "on-tertiary": "#003824",
+                        "on-primary": "#00363d",
+                        "outline": "#849396",
+                        "surface-container-highest": "#303444",
+                        "secondary-container": "#6001d1",
+                        "on-secondary-fixed-variant": "#5a00c6",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "secondary": "#d2bbff",
+                        "inverse-primary": "#006875",
+                        "background": "#0f1321",
+                        "tertiary-fixed": "#6ffbbe",
+                        "tertiary-container": "#5be9ad",
+                        "on-secondary": "#3f008e",
+                        "primary": "#c3f5ff",
+                        "primary-fixed-dim": "#00daf3",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "surface-tint": "#00daf3",
+                        "inverse-on-surface": "#2c303f",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-container-lowest": "#0a0d1c",
+                        "secondary-fixed": "#eaddff",
+                        "outline-variant": "#3b494c",
+                        "on-surface": "#dfe1f6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "lg": "24px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "md": "16px",
+                        "2xl": "64px",
+                        "margin-desktop": "48px",
+                        "xl": "40px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter Tight"],
+                        "mono-code": ["JetBrains Mono"],
+                        "display-lg": ["Inter Tight"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Inter Tight"],
+                        "headline-lg-mobile": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "mono-code": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-lg": ["64px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="flex overflow-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 bottom-0 w-64 z-40 flex flex-col p-md gap-sm bg-surface-container-low border-r border-outline-variant/20">
+<div class="flex items-center gap-md px-sm py-md">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">hub</span>
+</div>
+<div>
+<h1 class="text-headline-md font-headline-md font-black text-primary leading-tight">Antigravity AI</h1>
+<p class="text-label-md font-label-md text-on-surface-variant">Enterprise Architect</p>
+</div>
+</div>
+<nav class="flex flex-col gap-xs mt-lg overflow-y-auto">
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-label-md font-label-md">Overview</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span class="text-label-md font-label-md">Chat Studio</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="text-label-md font-label-md">Knowledge</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">memory</span>
+<span class="text-label-md font-label-md">Memory</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm bg-primary-container text-on-primary-container rounded-lg font-semibold scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined">hub</span>
+<span class="text-label-md font-label-md">Graph</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-label-md font-label-md">Evaluation</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-label-md font-label-md">History</span>
+</a>
+<div class="h-px bg-outline-variant/20 my-md mx-sm"></div>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="text-label-md font-label-md">Admin</span>
+</a>
+</nav>
+</aside>
+<!-- Main Workspace -->
+<main class="ml-64 flex-1 relative flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-64 right-0 z-50 flex justify-between items-center px-lg h-16 backdrop-blur-xl bg-surface/30 border-b border-outline-variant/20">
+<div class="flex items-center gap-lg">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="bg-surface-container-highest border-none rounded-full pl-xl pr-lg py-sm text-body-sm text-on-surface w-96 focus:ring-2 focus:ring-primary-container/20" placeholder="Search knowledge nodes..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-sm hover:bg-surface-variant/30 rounded-full transition-all active:scale-95">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</button>
+<button class="p-sm hover:bg-surface-variant/30 rounded-full transition-all active:scale-95">
+<span class="material-symbols-outlined text-on-surface-variant">contrast</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-high border border-outline-variant/50 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional portrait of a tech executive in a high-tech studio environment. Subtle cool lighting accentuates the modern, professional aesthetic consistent with a enterprise AI software interface. Soft bokeh background with glowing server racks." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8j8zqVdiEPlqpbvoIQOcEy8iHUDYgiNsEBN4dtf0KEkm66LwkL0wcrYOpascoSAli7UoGzDuR5LnRfE13hded_EI7WSFleIJEizPsq2JHVxHyzesxD8V36VX2jtKWEkpBPdv_Mxxh4xqXysDQ-QCnq5IeMQB6f7a-evWNib0KA7L8waZn8BAilAIHD_UBLGIVly6C0Sl4omBM6P51n5Z7unjghfn_nHsKzSdh53jfQl_vOaE5G8jMAqfJGZWr1RmjDrWtP-KL2Uw"/>
+</div>
+</div>
+</header>
+<!-- Graph Canvas Area -->
+<div class="flex-1 relative graph-canvas w-full h-full cursor-grab active:cursor-grabbing">
+<!-- Floating Nodes (Simulation) -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none">
+<defs>
+<marker id="arrowhead" markerheight="7" markerwidth="10" orient="auto" refx="20" refy="3.5">
+<polygon fill="rgba(132, 147, 150, 0.3)" points="0 0, 10 3.5, 0 7"></polygon>
+</marker>
+</defs>
+<line marker-end="url(#arrowhead)" stroke="rgba(0, 229, 255, 0.4)" stroke-width="1" x1="450" x2="680" y1="350" y2="280"></line>
+<line marker-end="url(#arrowhead)" stroke="rgba(210, 187, 255, 0.4)" stroke-width="1" x1="450" x2="520" y1="350" y2="550"></line>
+<line stroke="rgba(132, 147, 150, 0.2)" stroke-width="1" x1="680" x2="850" y1="280" y2="400"></line>
+</svg>
+<!-- Node: Central Entity -->
+<div class="absolute left-[380px] top-[300px] pointer-events-auto active-node">
+<div class="glass-panel p-md rounded-xl flex flex-col items-center gap-sm min-w-[160px] border-primary-container/40">
+<div class="relative w-12 h-12">
+<svg class="w-full h-full -rotate-90">
+<circle cx="24" cy="24" fill="none" r="20" stroke="rgba(0, 229, 255, 0.1)" stroke-width="3"></circle>
+<circle class="node-ring" cx="24" cy="24" fill="none" r="20" stroke="#00e5ff" stroke-width="3" style="stroke-dashoffset: 12;"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[20px]">person</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-label-md font-label-md text-primary">Julian Vance</p>
+<p class="text-[10px] font-mono-code text-on-surface-variant opacity-60">ID: E-20491</p>
+</div>
+</div>
+</div>
+<!-- Node: Organization -->
+<div class="absolute left-[650px] top-[220px] pointer-events-auto">
+<div class="glass-panel p-md rounded-xl flex flex-col items-center gap-sm min-w-[140px]">
+<div class="relative w-10 h-10">
+<svg class="w-full h-full -rotate-90">
+<circle cx="20" cy="20" fill="none" r="17" stroke="rgba(210, 187, 255, 0.1)" stroke-width="2"></circle>
+<circle class="node-ring" cx="20" cy="20" fill="none" r="17" stroke="#d2bbff" stroke-width="2" style="stroke-dashoffset: 45;"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-[18px]">corporate_fare</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-label-md font-label-md text-on-surface">NeuralLink Corp</p>
+</div>
+</div>
+</div>
+<!-- Node: Concept -->
+<div class="absolute left-[520px] top-[540px] pointer-events-auto">
+<div class="glass-panel p-md rounded-xl flex flex-col items-center gap-sm min-w-[140px]">
+<div class="relative w-10 h-10">
+<svg class="w-full h-full -rotate-90">
+<circle cx="20" cy="20" fill="none" r="17" stroke="rgba(111, 251, 190, 0.1)" stroke-width="2"></circle>
+<circle class="node-ring" cx="20" cy="20" fill="none" r="17" stroke="#6ffbbe" stroke-width="2" style="stroke-dashoffset: 20;"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-[18px]">psychology</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-label-md font-label-md text-on-surface">Quantum Memory</p>
+</div>
+</div>
+</div>
+<!-- Left Panel: Filters & Legend -->
+<div class="absolute left-lg top-lg bottom-lg w-72 pointer-events-none flex flex-col gap-lg pt-16">
+<div class="glass-panel p-md rounded-xl pointer-events-auto flex flex-col gap-md">
+<h3 class="text-label-md font-label-md text-primary-container tracking-widest uppercase">Entity Filters</h3>
+<div class="space-y-sm">
+<div class="flex items-center justify-between group cursor-pointer p-xs rounded-lg hover:bg-surface-variant/30">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-primary-container"></div>
+<span class="text-body-sm font-body-sm text-on-surface">People</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface-variant opacity-50">142</span>
+</div>
+<div class="flex items-center justify-between group cursor-pointer p-xs rounded-lg hover:bg-surface-variant/30">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="text-body-sm font-body-sm text-on-surface">Organizations</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface-variant opacity-50">89</span>
+</div>
+<div class="flex items-center justify-between group cursor-pointer p-xs rounded-lg hover:bg-surface-variant/30">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-tertiary"></div>
+<span class="text-body-sm font-body-sm text-on-surface">Concepts</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface-variant opacity-50">312</span>
+</div>
+</div>
+<div class="h-px bg-outline-variant/20"></div>
+<div class="space-y-sm">
+<p class="text-label-md font-label-md text-on-surface-variant mb-xs">Confidence Threshold</p>
+<input class="w-full accent-primary-container h-1 bg-surface-container-highest rounded-lg appearance-none" type="range"/>
+<div class="flex justify-between text-[10px] font-mono-code text-on-surface-variant">
+<span>0.50</span>
+<span>0.99</span>
+</div>
+</div>
+</div>
+<div class="mt-auto glass-panel p-sm rounded-xl pointer-events-auto">
+<div class="flex items-center gap-sm p-sm">
+<span class="material-symbols-outlined text-primary-container">insights</span>
+<p class="text-body-sm font-body-sm text-on-surface">Graph Density: <span class="font-bold">High</span></p>
+</div>
+</div>
+</div>
+<!-- Right Panel: Relationship Explorer -->
+<div class="absolute right-lg top-lg bottom-lg w-80 pointer-events-none flex flex-col gap-lg pt-16">
+<div class="glass-panel rounded-xl pointer-events-auto flex flex-col overflow-hidden max-h-full">
+<div class="p-md bg-surface-container-high/50 border-b border-outline-variant/20">
+<div class="flex items-center justify-between mb-sm">
+<h3 class="text-label-md font-label-md text-primary-container tracking-widest uppercase">Node Context</h3>
+<button class="text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg bg-primary-container/10 flex items-center justify-center border border-primary-container/30">
+<span class="material-symbols-outlined text-primary-container text-2xl">person</span>
+</div>
+<div>
+<p class="text-body-md font-headline-md font-semibold text-on-surface">Julian Vance</p>
+<p class="text-label-md font-label-md text-on-surface-variant">Principal Architect</p>
+</div>
+</div>
+</div>
+<div class="p-md flex-1 overflow-y-auto space-y-lg">
+<section>
+<h4 class="text-label-md font-label-md text-on-surface-variant mb-sm">DIRECT CONNECTIONS (4)</h4>
+<div class="space-y-sm">
+<div class="p-sm bg-surface-container-low rounded-lg border border-outline-variant/10 hover:border-primary-container/50 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-xs">
+<span class="text-body-sm font-bold text-on-surface">NeuralLink Corp</span>
+<span class="text-[10px] bg-secondary-container/20 text-secondary px-xs py-[2px] rounded">Org</span>
+</div>
+<p class="text-label-md font-label-md text-on-surface-variant mb-sm">Type: Employment</p>
+<div class="flex items-center gap-sm">
+<div class="flex-1 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[92%]"></div>
+</div>
+<span class="text-[10px] font-mono-code text-secondary">0.92</span>
+</div>
+</div>
+<div class="p-sm bg-surface-container-low rounded-lg border border-outline-variant/10 hover:border-primary-container/50 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-xs">
+<span class="text-body-sm font-bold text-on-surface">Quantum Memory</span>
+<span class="text-[10px] bg-tertiary-container/20 text-tertiary px-xs py-[2px] rounded">Concept</span>
+</div>
+<p class="text-label-md font-label-md text-on-surface-variant mb-sm">Type: Research Interest</p>
+<div class="flex items-center gap-sm">
+<div class="flex-1 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[78%]"></div>
+</div>
+<span class="text-[10px] font-mono-code text-tertiary">0.78</span>
+</div>
+</div>
+</div>
+</section>
+<section>
+<h4 class="text-label-md font-label-md text-on-surface-variant mb-sm">AI INFERENCE</h4>
+<div class="p-md rounded-lg border-l-2 border-primary-container bg-primary-container/5">
+<p class="text-body-sm font-body-sm text-primary italic leading-relaxed">
+                                    "Probable correlation between Julian Vance's recent publication and the patent filing of NeuralLink Corp (94% confidence). Suggests secret collaborative phase during Q3."
+                                </p>
+</div>
+</section>
+</div>
+<div class="p-md bg-surface-container-high/30 border-t border-outline-variant/20">
+<button class="w-full py-sm bg-primary-container text-on-primary-container font-semibold rounded-lg hover:opacity-90 active:scale-95 transition-all text-label-md uppercase tracking-wider">
+                            Deep Trace Entity
+                        </button>
+</div>
+</div>
+</div>
+<!-- Bottom Left: Minimap -->
+<div class="absolute left-lg bottom-lg w-48 h-32 glass-panel rounded-lg border-2 border-primary-container/20 overflow-hidden pointer-events-auto">
+<div class="relative w-full h-full opacity-50 p-sm">
+<!-- Fake minimap content -->
+<div class="absolute w-2 h-2 bg-primary-container rounded-full top-1/4 left-1/3"></div>
+<div class="absolute w-1 h-1 bg-secondary rounded-full top-1/2 left-1/2"></div>
+<div class="absolute w-1 h-1 bg-tertiary rounded-full top-3/4 left-1/4"></div>
+<div class="absolute w-2 h-2 bg-primary-container rounded-full top-1/3 right-1/4"></div>
+<div class="absolute w-1 h-1 bg-on-surface-variant rounded-full bottom-1/4 right-1/2"></div>
+<!-- Minimap viewport -->
+<div class="absolute top-4 left-4 w-12 h-10 border border-primary-container/60 bg-primary-container/10"></div>
+</div>
+<div class="absolute top-2 left-2 flex gap-1">
+<div class="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-surface-container-highest"></div>
+</div>
+</div>
+<!-- Canvas Controls -->
+<div class="absolute bottom-lg right-[420px] glass-panel flex rounded-lg p-sm gap-sm pointer-events-auto">
+<button class="p-sm hover:bg-surface-variant/50 rounded transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+<div class="w-px bg-outline-variant/20 my-sm"></div>
+<button class="p-sm hover:bg-surface-variant/50 rounded transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">remove</span>
+</button>
+<div class="w-px bg-outline-variant/20 my-sm"></div>
+<button class="p-sm hover:bg-surface-variant/50 rounded transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">fit_screen</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Background Atmospheric Effect -->
+<div class="fixed inset-0 pointer-events-none z-[-1] opacity-40">
+
+</div>
+<script>
+        // Micro-interaction: Node selection effect
+        document.querySelectorAll('.pointer-events-auto').forEach(node => {
+            node.addEventListener('click', function() {
+                if(this.classList.contains('active-node')) return;
+                
+                // Remove active class from others
+                document.querySelectorAll('.active-node').forEach(n => {
+                    n.classList.remove('active-node', 'border-primary-container/40');
+                });
+                
+                // Add to current
+                this.classList.add('active-node');
+                this.querySelector('.glass-panel').classList.add('border-primary-container/40');
+            });
+        });
+
+        // Simple draggable canvas simulation logic (visual only)
+        let isDragging = false;
+        let startX, startY;
+        const canvas = document.querySelector('.graph-canvas');
+
+        canvas.addEventListener('mousedown', (e) => {
+            if(e.target === canvas) {
+                isDragging = true;
+                startX = e.pageX;
+                startY = e.pageY;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            // Simulated panning motion
+            const walkX = (e.pageX - startX) * 0.5;
+            const walkY = (e.pageY - startY) * 0.5;
+            // canvas.style.backgroundPosition = `${walkX}px ${walkY}px`;
+        });
+    </script>
+</body></html>

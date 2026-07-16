@@ -31,9 +31,9 @@ logger = logging.getLogger("app.orchestration.workflow")
 
 def route_decision(state: WorkflowState) -> str:
     """
-    (`Conditional Routing Function from Router Node`)
-    Inspects `router_decision` in state and directs execution to the appropriate branch:
-    - DIRECT_LLM -> prompt_builder_node
+    (`Conditional Routing Function from Router Node / Tool Execution Node`)
+    Inspects `router_decision` along with memory/tool results in state and directs execution:
+    - DIRECT_LLM -> context_merge_node if memory or tools retrieved data, else prompt_builder_node
     - HYBRID_RAG -> rag_retrieval_node
     - GRAPH_RAG -> graph_retrieval_node
     - HYBRID_SYNTHESIS -> rag_retrieval_node (which then connects to graph_retrieval_node)
@@ -42,6 +42,12 @@ def route_decision(state: WorkflowState) -> str:
     route_str = decision.get("route", RouteType.DIRECT_LLM.value) if decision else RouteType.DIRECT_LLM.value
 
     if route_str == RouteType.DIRECT_LLM.value:
+        mem_ctx = state.get("retrieved_memory_context", "").strip()
+        tool_ctx = state.get("retrieved_tool_context", "").strip()
+        has_mem = mem_ctx and mem_ctx not in ("[Long-Term Memory Engine Offline: Using default context]", "")
+        has_tool = tool_ctx and tool_ctx not in ("[Tool System Offline: Execution failed]", "")
+        if has_mem or has_tool:
+            return "context_merge"
         return "prompt_builder"
     elif route_str == RouteType.GRAPH_RAG.value:
         return "graph_retrieval"
@@ -92,18 +98,20 @@ class OrchestrationWorkflow:
         self.workflow.add_node("response_formatter", response_formatter_node)
         self.workflow.add_node("end", end_node)
 
-        # 2. Connect initial execution flow
+        # 2. Connect initial execution flow: start -> intent -> router -> memory -> tools
         self.workflow.add_edge(START, "start")
         self.workflow.add_edge("start", "intent_analysis")
         self.workflow.add_edge("intent_analysis", "router")
         self.workflow.add_edge("router", "memory_placeholder")
+        self.workflow.add_edge("memory_placeholder", "tools_placeholder")
 
-        # 3. Add conditional routing after memory retrieval
+        # 3. Add conditional routing after tool execution node
         self.workflow.add_conditional_edges(
-            "memory_placeholder",
+            "tools_placeholder",
             route_decision,
             {
                 "prompt_builder": "prompt_builder",
+                "context_merge": "context_merge",
                 "rag_retrieval": "rag_retrieval",
                 "graph_retrieval": "graph_retrieval"
             }

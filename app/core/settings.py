@@ -75,7 +75,7 @@ class AppConfig(BaseModel):
 
 class GroqConfig(BaseModel):
     """Groq API settings."""
-    api_key: str = ""
+    api_key: str = Field(default="", exclude=True)  # Never serialized
     temperature: float = Field(default=DEFAULT_GROQ_TEMPERATURE, ge=0.0, le=2.0)
     max_tokens: int = Field(default=DEFAULT_GROQ_MAX_TOKENS, gt=0)
     timeout_seconds: int = 30
@@ -133,11 +133,11 @@ class MemoryConfig(BaseModel):
 
 class ToolsConfig(BaseModel):
     """Tool manager & third-party tool API configurations."""
-    weather_api_key: str = ""
+    weather_api_key: str = Field(default="", exclude=True)  # Never serialized
     weather_enabled: bool = True
-    news_api_key: str = ""
+    news_api_key: str = Field(default="", exclude=True)  # Never serialized
     news_enabled: bool = True
-    search_api_key: str = ""
+    search_api_key: str = Field(default="", exclude=True)  # Never serialized
     search_enabled: bool = True
     translation_enabled: bool = True
     currency_enabled: bool = True
@@ -161,6 +161,9 @@ class EvaluationConfig(BaseModel):
     latency_target_ms: int = Field(default=2000, gt=0)
     ragas_enabled: bool = True
     deepeval_enabled: bool = True
+    prompt_cost_per_1m_tokens_usd: float = Field(default=0.50, ge=0.0, description="USD cost per 1M prompt tokens")
+    completion_cost_per_1m_tokens_usd: float = Field(default=0.80, ge=0.0, description="USD cost per 1M completion tokens")
+
 
 
 class PostgresConfig(BaseModel):
@@ -168,7 +171,7 @@ class PostgresConfig(BaseModel):
     host: str = "localhost"
     port: int = DEFAULT_POSTGRES_PORT
     user: str = "postgres"
-    password: str = "password"
+    password: str = Field(default="password", exclude=True)  # Never serialized
     db_name: str = "chatbot_db"
     pool_size: int = 10
     echo: bool = False
@@ -191,7 +194,7 @@ class MongoConfig(BaseModel):
 
 class PineconeConfig(BaseModel):
     """Pinecone vector database settings."""
-    api_key: str = ""
+    api_key: str = Field(default="", exclude=True)  # Never serialized
     environment: str = "us-east-1"
     index_name: str = "chatbot-vectors"
     namespace: str = "default"
@@ -202,7 +205,7 @@ class Neo4jConfig(BaseModel):
     """Neo4j graph database settings."""
     uri: str = f"bolt://localhost:{DEFAULT_NEO4J_PORT}"
     user: str = "neo4j"
-    password: str = "password"
+    password: str = Field(default="password", exclude=True)  # Never serialized
     database: str = "neo4j"
     max_connection_pool_size: int = 50
 
@@ -301,6 +304,8 @@ class Settings(BaseSettings):
     EVAL_LATENCY_TARGET_MS: int = 2000
     RAGAS_ENABLED: bool = True
     DEEPEVAL_ENABLED: bool = True
+    EVAL_PROMPT_COST_PER_1M_TOKENS: float = 0.50
+    EVAL_COMPLETION_COST_PER_1M_TOKENS: float = 0.80
 
     # Storage Databases
     POSTGRES_HOST: str = "localhost"
@@ -419,6 +424,8 @@ class Settings(BaseSettings):
             latency_target_ms=self.EVAL_LATENCY_TARGET_MS,
             ragas_enabled=self.RAGAS_ENABLED,
             deepeval_enabled=self.DEEPEVAL_ENABLED,
+            prompt_cost_per_1m_tokens_usd=self.EVAL_PROMPT_COST_PER_1M_TOKENS,
+            completion_cost_per_1m_tokens_usd=self.EVAL_COMPLETION_COST_PER_1M_TOKENS,
         )
         sql_cfg = PostgresConfig(
             host=self.POSTGRES_HOST,

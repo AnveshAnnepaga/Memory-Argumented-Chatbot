@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Chat Studio | Antigravity AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Inter+Tight:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .glass-surface {
+            background: rgba(15, 19, 33, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(132, 147, 150, 0.1);
+        }
+        .glass-border {
+            border: 1px solid rgba(132, 147, 150, 0.15);
+        }
+        .ai-reasoning-line {
+            position: relative;
+        }
+        .ai-reasoning-line::before {
+            content: '';
+            position: absolute;
+            left: -12px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #d2bbff;
+            border-radius: 2px;
+        }
+        .streaming-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .4; }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(132, 147, 150, 0.2);
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#00626e",
+                        "surface": "#0f1321",
+                        "on-surface-variant": "#bac9cc",
+                        "secondary-fixed-dim": "#d2bbff",
+                        "surface-container-low": "#171b2a",
+                        "on-secondary-container": "#c9aeff",
+                        "primary-fixed": "#9cf0ff",
+                        "error-container": "#93000a",
+                        "inverse-surface": "#dfe1f6",
+                        "surface-variant": "#303444",
+                        "surface-container": "#1b1f2e",
+                        "on-primary-fixed": "#001f24",
+                        "on-background": "#dfe1f6",
+                        "primary-container": "#00e5ff",
+                        "surface-container-high": "#262939",
+                        "on-tertiary-container": "#006645",
+                        "on-secondary-fixed": "#25005a",
+                        "tertiary": "#a8ffd2",
+                        "surface-dim": "#0f1321",
+                        "on-primary-fixed-variant": "#004f58",
+                        "surface-bright": "#353849",
+                        "on-tertiary": "#003824",
+                        "on-primary": "#00363d",
+                        "outline": "#849396",
+                        "surface-container-highest": "#303444",
+                        "secondary-container": "#6001d1",
+                        "on-secondary-fixed-variant": "#5a00c6",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "secondary": "#d2bbff",
+                        "inverse-primary": "#006875",
+                        "background": "#0f1321",
+                        "tertiary-fixed": "#6ffbbe",
+                        "tertiary-container": "#5be9ad",
+                        "on-secondary": "#3f008e",
+                        "primary": "#c3f5ff",
+                        "primary-fixed-dim": "#00daf3",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "surface-tint": "#00daf3",
+                        "inverse-on-surface": "#2c303f",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-container-lowest": "#0a0d1c",
+                        "secondary-fixed": "#eaddff",
+                        "outline-variant": "#3b494c",
+                        "on-surface": "#dfe1f6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "lg": "24px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "md": "16px",
+                        "2xl": "64px",
+                        "margin-desktop": "48px",
+                        "xl": "40px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter Tight"],
+                        "mono-code": ["JetBrains Mono"],
+                        "display-lg": ["Inter Tight"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Inter Tight"],
+                        "headline-lg-mobile": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "mono-code": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-lg": ["64px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-hidden">
+<!-- Main Shell -->
+<div class="flex h-screen w-full relative">
+<!-- SideNavBar (Shared Component) -->
+<nav class="fixed left-0 top-0 bottom-0 w-64 z-40 flex flex-col p-md gap-sm bg-surface-container-low border-r border-outline-variant/20">
+<div class="flex items-center gap-sm mb-lg px-xs">
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container text-[20px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div class="flex flex-col">
+<span class="text-headline-md font-headline-md font-black text-primary">Antigravity AI</span>
+<span class="text-label-md font-label-md text-on-surface-variant">Enterprise Architect</span>
+</div>
+</div>
+<div class="flex flex-col gap-xs flex-grow overflow-y-auto custom-scrollbar">
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-label-md font-label-md">Overview</span>
+</a>
+<a class="flex items-center gap-md p-sm bg-primary-container text-on-primary-container rounded-lg font-semibold scale-[0.98] transition-transform" href="/chat">
+<span class="material-symbols-outlined">forum</span>
+<span class="text-label-md font-label-md">Chat Studio</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="text-label-md font-label-md">Knowledge</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">memory</span>
+<span class="text-label-md font-label-md">Memory</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">hub</span>
+<span class="text-label-md font-label-md">Graph</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-label-md font-label-md">Evaluation</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-label-md font-label-md">History</span>
+</a>
+</div>
+<div class="mt-auto pt-lg border-t border-outline-variant/20 flex flex-col gap-xs">
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md p-sm text-on-surface-variant hover:bg-surface-variant/50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="text-label-md font-label-md">Admin</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-grow pl-64 flex overflow-hidden">
+<!-- Column 1: Conversation List -->
+<aside class="w-80 flex flex-col bg-surface-container border-r border-outline-variant/20">
+<div class="p-lg flex flex-col gap-md">
+<button class="w-full bg-primary-container text-on-primary-container py-sm px-md rounded-lg font-label-md flex items-center justify-center gap-sm active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">add_comment</span>
+                        New Chat
+                    </button>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg py-2 pl-10 pr-4 text-body-sm focus:outline-none focus:ring-2 focus:ring-primary-container/20 transition-all" placeholder="Search threads..." type="text"/>
+</div>
+</div>
+<div class="flex-grow overflow-y-auto custom-scrollbar px-md pb-lg">
+<!-- Pinned Section -->
+<div class="mb-lg">
+<h3 class="text-label-md font-label-md text-on-surface-variant px-sm mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">push_pin</span>
+                            PINNED
+                        </h3>
+<div class="flex flex-col gap-xs">
+<div class="p-sm bg-surface-variant/30 rounded-lg border border-outline-variant/10 cursor-pointer hover:bg-surface-variant/50 transition-colors">
+<div class="text-body-sm font-semibold truncate mb-1">Infrastructure Scaling Plan</div>
+<div class="text-[12px] text-on-surface-variant truncate">Architecting the multi-region...</div>
+</div>
+</div>
+</div>
+<!-- Today Section -->
+<div class="mb-lg">
+<h3 class="text-label-md font-label-md text-on-surface-variant px-sm mb-sm uppercase tracking-wider">Today</h3>
+<div class="flex flex-col gap-xs">
+<div class="p-sm bg-primary-container/10 border border-primary-container/20 rounded-lg cursor-pointer">
+<div class="text-body-sm font-bold text-primary truncate mb-1">Optimization Logic v4.2</div>
+<div class="text-[12px] text-primary/80 truncate">Evaluating reasoning steps...</div>
+</div>
+<div class="p-sm hover:bg-surface-variant/30 rounded-lg cursor-pointer transition-colors">
+<div class="text-body-sm font-semibold truncate mb-1">Graph DB Schema</div>
+<div class="text-[12px] text-on-surface-variant truncate">Relational mapping for knowledge...</div>
+</div>
+</div>
+</div>
+<!-- Yesterday Section -->
+<div class="mb-lg">
+<h3 class="text-label-md font-label-md text-on-surface-variant px-sm mb-sm uppercase tracking-wider">Yesterday</h3>
+<div class="flex flex-col gap-xs opacity-80">
+<div class="p-sm hover:bg-surface-variant/30 rounded-lg cursor-pointer transition-colors">
+<div class="text-body-sm font-semibold truncate mb-1">Security Audit Log</div>
+<div class="text-[12px] text-on-surface-variant truncate">Anomalous pattern detection...</div>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Column 2: Message Thread -->
+<section class="flex-grow flex flex-col relative bg-surface-dim">
+<!-- Thread Top Bar -->
+<header class="h-16 flex items-center justify-between px-lg backdrop-blur-xl bg-surface/30 border-b border-outline-variant/20">
+<div class="flex items-center gap-md">
+<h2 class="text-headline-md font-headline-md font-medium text-on-surface cursor-text hover:bg-surface-variant/20 px-2 py-1 rounded-md transition-colors" contenteditable="true">Optimization Logic v4.2</h2>
+<div class="flex items-center gap-sm">
+<div class="flex items-center gap-xs px-2 py-1 bg-surface-container-highest rounded-full border border-outline-variant/20">
+<span class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
+<span class="text-label-md font-label-md text-on-surface-variant">Online</span>
+</div>
+<div class="flex items-center gap-xs px-2 py-1 bg-surface-container-highest rounded-full border border-outline-variant/20">
+<span class="material-symbols-outlined text-[14px] text-primary">bolt</span>
+<span class="text-label-md font-label-md text-on-surface-variant">340ms</span>
+</div>
+<div class="flex items-center gap-xs px-2 py-1 bg-primary/10 rounded-full border border-primary/20">
+<span class="text-label-md font-label-md text-primary">Memory Active</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-2 hover:bg-surface-variant/50 rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="p-2 hover:bg-surface-variant/50 rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Thread Messages -->
+<div class="flex-grow overflow-y-auto custom-scrollbar p-lg flex flex-col gap-lg">
+<!-- User Message -->
+<div class="flex justify-end">
+<div class="max-w-[80%] glass-surface p-md rounded-2xl rounded-tr-none border-primary/20 shadow-lg shadow-primary/5">
+<p class="text-body-md text-on-surface">Can you analyze the current memory consumption patterns in the production shard and suggest a weight-pruning strategy for the attention heads?</p>
+</div>
+</div>
+<!-- Assistant Message -->
+<div class="flex gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant/30 flex-shrink-0">
+<div class="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-secondary animate-pulse shadow-[0_0_15px_rgba(0,229,255,0.4)]"></div>
+</div>
+<div class="flex flex-col gap-sm max-w-[85%]">
+<div class="flex gap-xs items-center">
+<span class="text-label-md font-label-md text-on-surface-variant">Antigravity Assistant</span>
+<div class="flex gap-1 ml-sm">
+<span class="text-[10px] bg-tertiary-container/10 text-tertiary px-1.5 py-0.5 rounded border border-tertiary/20 font-bold uppercase">Knowledge</span>
+<span class="text-[10px] bg-secondary-container/10 text-secondary px-1.5 py-0.5 rounded border border-secondary/20 font-bold uppercase">Reasoning</span>
+<span class="text-[10px] bg-primary-container/10 text-primary px-1.5 py-0.5 rounded border border-primary/20 font-bold uppercase">Memory</span>
+</div>
+</div>
+<div class="glass-surface p-md rounded-2xl rounded-tl-none border-outline-variant/20 ai-reasoning-line">
+<p class="text-body-md text-on-surface leading-relaxed">I've accessed the latest telemetry from the production cluster. The attention heads in the middle layers (12-24) show a high degree of sparsity (up to 78%).</p>
+<div class="mt-md p-md bg-surface-container-lowest rounded-lg border border-outline-variant/10 font-mono-code text-body-sm text-tertiary">
+                                    // Recommended Pruning Strategy<br/>
+                                    pruning_threshold = 0.005;<br/>
+                                    mask = attention_weights.abs() &gt; pruning_threshold;<br/>
+                                    compressed_model = prune_heads(model, mask, target_reduction=0.35);
+                                </div>
+<p class="mt-md text-body-md text-on-surface leading-relaxed">Applying this could reduce memory footprint by 35% without significant perplexity loss.</p>
+</div>
+<div class="flex items-center gap-md mt-1">
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">thumb_up</span>
+</button>
+<button class="text-on-surface-variant hover:text-error transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">thumb_down</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Streaming State (Simulation) -->
+<div class="flex gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant/30 flex-shrink-0">
+<div class="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-secondary animate-pulse opacity-50"></div>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="flex flex-col gap-xs px-md py-sm rounded-xl bg-surface-container-low border border-outline-variant/20">
+<div class="flex items-center gap-sm">
+<div class="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+<span class="text-label-md font-label-md text-on-surface streaming-pulse">Thinking...</span>
+</div>
+<div class="h-1 bg-surface-variant/30 rounded-full overflow-hidden mt-2 w-48">
+<div class="h-full bg-primary w-2/3 shadow-[0_0_8px_#00e5ff] transition-all duration-1000"></div>
+</div>
+<div class="flex flex-col mt-sm gap-1">
+<div class="flex items-center gap-xs text-[11px] text-tertiary">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                        Knowledge Retrieved: "Shard-Telemetry-Metrics"
+                                    </div>
+<div class="flex items-center gap-xs text-[11px] text-on-surface-variant opacity-60">
+<span class="material-symbols-outlined text-[14px]">radio_button_unchecked</span>
+                                        Generating Response...
+                                    </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Thread Composer -->
+<footer class="p-lg">
+<div class="max-w-4xl mx-auto glass-surface rounded-2xl border-outline-variant/30 p-2 shadow-2xl relative">
+<div class="flex items-center gap-sm px-2 mb-2">
+<div class="flex items-center gap-1 bg-surface-container-highest px-2 py-1 rounded-md border border-outline-variant/10 cursor-pointer hover:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined text-[16px] text-primary">psychology</span>
+<span class="text-label-md font-label-md text-on-surface-variant group-hover:text-primary transition-colors">Balanced</span>
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">expand_more</span>
+</div>
+<div class="w-px h-4 bg-outline-variant/30"></div>
+<button class="flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">construction</span>
+<span class="text-label-md font-label-md">Tools</span>
+</button>
+</div>
+<div class="flex items-end gap-sm px-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-all">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-body-md text-on-surface py-2 resize-none max-h-48 custom-scrollbar" placeholder="Message Antigravity..." rows="1"></textarea>
+<button class="w-10 h-10 flex-shrink-0 bg-primary-container text-on-primary-container rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.2)] active:scale-90 transition-all">
+<span class="material-symbols-outlined">arrow_upward</span>
+</button>
+</div>
+</div>
+<p class="text-center text-[11px] text-on-surface-variant/40 mt-sm">Antigravity AI can make mistakes. Verify critical architectural decisions.</p>
+</footer>
+</section>
+<!-- Column 3: Context Panel -->
+<aside class="w-80 bg-surface-container-low border-l border-outline-variant/20 overflow-y-auto custom-scrollbar p-lg flex flex-col gap-lg">
+<div>
+<h3 class="text-label-md font-label-md text-primary uppercase tracking-widest mb-md">Memory Context</h3>
+<div class="glass-surface p-md rounded-xl border-primary/10">
+<div class="flex items-center gap-sm mb-sm">
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">memory</span>
+<span class="text-body-sm font-bold">Active Summary</span>
+</div>
+<p class="text-[13px] text-on-surface-variant leading-relaxed">
+                            Currently tracking conversation thread regarding <span class="text-secondary">#Shard-Production-A</span>. 
+                            Previous context includes latency spikes in layer-16 and recent pruning experiments from last Tuesday.
+                        </p>
+</div>
+</div>
+<div>
+<h3 class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest mb-md">Related Knowledge</h3>
+<div class="flex flex-col gap-sm">
+<div class="flex gap-md p-sm hover:bg-surface-variant/30 rounded-lg cursor-pointer transition-colors group">
+<div class="w-10 h-10 rounded bg-surface-container flex-shrink-0 flex items-center justify-center border border-outline-variant/20">
+<span class="material-symbols-outlined text-tertiary">description</span>
+</div>
+<div class="flex flex-col">
+<span class="text-body-sm font-semibold group-hover:text-primary transition-colors">Attention-Pruning-Guide.pdf</span>
+<span class="text-[11px] text-on-surface-variant">Modified 2h ago • 1.2MB</span>
+</div>
+</div>
+<div class="flex gap-md p-sm hover:bg-surface-variant/30 rounded-lg cursor-pointer transition-colors group">
+<div class="w-10 h-10 rounded bg-surface-container flex-shrink-0 flex items-center justify-center border border-outline-variant/20">
+<span class="material-symbols-outlined text-secondary">database</span>
+</div>
+<div class="flex flex-col">
+<span class="text-body-sm font-semibold group-hover:text-primary transition-colors">Telemetry-API-V2</span>
+<span class="text-[11px] text-on-surface-variant">Live Connection • Shard A</span>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h3 class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest mb-md">Response Quality</h3>
+<div class="p-md bg-surface-container rounded-xl border border-outline-variant/10">
+<div class="flex justify-between items-center mb-sm">
+<span class="text-body-sm">Alignment Score</span>
+<span class="text-body-sm font-bold text-primary">98%</span>
+</div>
+<div class="h-2 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-secondary w-[98%] shadow-[0_0_8px_#00e5ff]"></div>
+</div>
+<div class="mt-md flex flex-col gap-2">
+<div class="flex justify-between text-[11px] text-on-surface-variant">
+<span>Logical Consistency</span>
+<span class="text-tertiary">High</span>
+</div>
+<div class="flex justify-between text-[11px] text-on-surface-variant">
+<span>Factual Grounding</span>
+<span class="text-tertiary">Verified</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-auto">
+<div class="bg-gradient-to-br from-primary/5 to-secondary/5 p-md rounded-2xl border border-primary/20">
+<div class="flex items-center gap-sm mb-sm text-primary">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="text-label-md font-bold">Pro Feature</span>
+</div>
+<p class="text-[12px] text-on-surface-variant mb-md leading-relaxed">
+                            Connect your GitHub repo to allow Antigravity to suggest direct PRs for pruning logic.
+                        </p>
+<button class="w-full py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-label-md font-bold hover:bg-primary/20 transition-all">
+                            Link Repository
+                        </button>
+</div>
+</div>
+</aside>
+</main>
+</div>
+<!-- Atmospheric Effect -->
+<div class="fixed inset-0 pointer-events-none z-[-1]">
+
+</div>
+<script>
+        // Auto-grow textarea functionality
+        const tx = document.getElementsByTagName("textarea");
+        for (let i = 0; i < tx.length; i++) {
+            tx[i].setAttribute("style", "height:" + (tx[i].scrollHeight) + "px;overflow-y:hidden;");
+            tx[i].addEventListener("input", OnInput, false);
+        }
+
+        function OnInput() {
+            this.style.height = "auto";
+            this.style.height = (this.scrollHeight) + "px";
+        }
+    </script>
+</body></html>

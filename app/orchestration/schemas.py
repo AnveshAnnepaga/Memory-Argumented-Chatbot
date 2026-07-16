@@ -80,10 +80,13 @@ class WorkflowMetadata(BaseModel):
     route_taken: RouteType = Field(default=RouteType.UNKNOWN, description="The actual route executed by the state machine")
     rag_tokens: int = Field(default=0, description="Estimated token count of retrieved RAG context")
     graph_tokens: int = Field(default=0, description="Estimated token count of retrieved Graph context")
+    memory_tokens: int = Field(default=0, description="Estimated token count of retrieved Memory context")
+    tool_tokens: int = Field(default=0, description="Estimated token count of retrieved Tool context")
     total_prompt_tokens: int = Field(default=0, description="Estimated token count of the final LLM prompt")
     execution_time_ms: float = Field(default=0.0, description="Total workflow execution latency in milliseconds")
     node_path: List[str] = Field(default_factory=list, description="Chronological sequence of LangGraph nodes executed")
     errors: List[str] = Field(default_factory=list, description="Any non-fatal warnings or fallback errors encountered")
+    retrieved_chunks: List[Any] = Field(default_factory=list, description="Retrieved document chunks from RAG retrieval node")
 
 
 class WorkflowResponse(BaseModel):
@@ -98,3 +101,4 @@ class WorkflowResponse(BaseModel):
     router_decision: RouterDecision = Field(..., description="Router execution path details")
     metadata: WorkflowMetadata = Field(..., description="Execution diagnostics and node transition path")
     prompt_context: Optional[PromptContext] = Field(default=None, description="Detailed prompt composition breakdown")
+    evaluation: Optional[Dict[str, Any]] = Field(default=None, description="Read-only evaluation telemetry report from EvaluationPipeline")

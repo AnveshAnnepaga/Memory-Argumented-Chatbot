@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sign Up | Antigravity AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Inter+Tight:wght@500;600;900&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .glass-surface {
+            background: rgba(15, 19, 33, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(132, 147, 150, 0.15);
+        }
+        .inner-glow {
+            box-shadow: inset 0 1px 0 0 rgba(195, 245, 255, 0.1);
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#00626e",
+                        "surface": "#0f1321",
+                        "on-surface-variant": "#bac9cc",
+                        "secondary-fixed-dim": "#d2bbff",
+                        "surface-container-low": "#171b2a",
+                        "on-secondary-container": "#c9aeff",
+                        "primary-fixed": "#9cf0ff",
+                        "error-container": "#93000a",
+                        "inverse-surface": "#dfe1f6",
+                        "surface-variant": "#303444",
+                        "surface-container": "#1b1f2e",
+                        "on-primary-fixed": "#001f24",
+                        "on-background": "#dfe1f6",
+                        "primary-container": "#00e5ff",
+                        "surface-container-high": "#262939",
+                        "on-tertiary-container": "#006645",
+                        "on-secondary-fixed": "#25005a",
+                        "tertiary": "#a8ffd2",
+                        "surface-dim": "#0f1321",
+                        "on-primary-fixed-variant": "#004f58",
+                        "surface-bright": "#353849",
+                        "on-tertiary": "#003824",
+                        "on-primary": "#00363d",
+                        "outline": "#849396",
+                        "surface-container-highest": "#303444",
+                        "secondary-container": "#6001d1",
+                        "on-secondary-fixed-variant": "#5a00c6",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "secondary": "#d2bbff",
+                        "inverse-primary": "#006875",
+                        "background": "#0f1321",
+                        "tertiary-fixed": "#6ffbbe",
+                        "tertiary-container": "#5be9ad",
+                        "on-secondary": "#3f008e",
+                        "primary": "#c3f5ff",
+                        "primary-fixed-dim": "#00daf3",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "surface-tint": "#00daf3",
+                        "inverse-on-surface": "#2c303f",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-container-lowest": "#0a0d1c",
+                        "secondary-fixed": "#eaddff",
+                        "outline-variant": "#3b494c",
+                        "on-surface": "#dfe1f6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "lg": "24px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "md": "16px",
+                        "2xl": "64px",
+                        "margin-desktop": "48px",
+                        "xl": "40px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter Tight"],
+                        "mono-code": ["JetBrains Mono"],
+                        "display-lg": ["Inter Tight"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Inter Tight"],
+                        "headline-lg-mobile": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "mono-code": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "display-lg": ["64px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-x-hidden min-h-screen selection:bg-primary-container selection:text-on-primary-container">
+<!-- Ambient Aurora Background -->
+<div class="fixed inset-0 z-0 pointer-events-none">
+
+<div class="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background"></div>
+</div>
+<!-- Main Navigation Shell (Suppressed contextually, but keeping logo/identity for branding) -->
+<header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 pointer-events-none">
+<div class="flex items-center gap-md pointer-events-auto">
+<span class="text-headline-md font-headline-md font-black text-primary tracking-tighter">Antigravity AI</span>
+</div>
+</header>
+<main class="relative z-10 flex items-center justify-center min-h-screen px-margin-mobile py-2xl">
+<div class="w-full max-w-xl animate-float">
+<!-- Glass Card Container -->
+<div class="glass-surface inner-glow rounded-xl p-lg md:p-xl flex flex-col gap-lg shadow-2xl relative overflow-hidden">
+<!-- Decorative Light Bleed -->
+<div class="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 blur-[80px] rounded-full"></div>
+<div class="absolute -bottom-24 -left-24 w-48 h-48 bg-secondary/10 blur-[80px] rounded-full"></div>
+<!-- Header Section -->
+<div class="space-y-sm relative z-10">
+<h1 class="text-headline-lg font-headline-lg text-on-surface tracking-tight">Architect your future.</h1>
+<p class="text-on-surface-variant font-body-md">Join the enterprise standard for computational intelligence.</p>
+</div>
+<!-- Form Section -->
+<form class="space-y-md relative z-10" id="signupForm" onsubmit="event.preventDefault();">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Full Name -->
+<div class="flex flex-col gap-xs">
+<label class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest px-1" for="fullName">Full Name</label>
+<input class="bg-surface-container-low border border-outline-variant/30 rounded-lg p-md text-on-surface placeholder:text-on-surface-variant/30 focus:ring-2 focus:ring-primary-container/20 focus:border-primary transition-all outline-none" id="fullName" placeholder="John Architect" type="text"/>
+</div>
+<!-- Company Name -->
+<div class="flex flex-col gap-xs">
+<label class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest px-1" for="companyName">Company <span class="opacity-50 text-[10px]">(Optional)</span></label>
+<input class="bg-surface-container-low border border-outline-variant/30 rounded-lg p-md text-on-surface placeholder:text-on-surface-variant/30 focus:ring-2 focus:ring-primary-container/20 focus:border-primary transition-all outline-none" id="companyName" placeholder="Quantum Dynamics" type="text"/>
+</div>
+</div>
+<!-- Email -->
+<div class="flex flex-col gap-xs">
+<label class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest px-1" for="email">Corporate Email</label>
+<input class="bg-surface-container-low border border-outline-variant/30 rounded-lg p-md text-on-surface placeholder:text-on-surface-variant/30 focus:ring-2 focus:ring-primary-container/20 focus:border-primary transition-all outline-none" id="email" placeholder="name@company.ai" type="email"/>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Password -->
+<div class="flex flex-col gap-xs relative">
+<label class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest px-1" for="password">Password</label>
+<div class="relative">
+<input class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg p-md text-on-surface placeholder:text-on-surface-variant/30 focus:ring-2 focus:ring-primary-container/20 focus:border-primary transition-all outline-none pr-12" id="password" placeholder="••••••••" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- Confirm Password -->
+<div class="flex flex-col gap-xs">
+<label class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest px-1" for="confirmPassword">Confirm Password</label>
+<input class="bg-surface-container-low border border-outline-variant/30 rounded-lg p-md text-on-surface placeholder:text-on-surface-variant/30 focus:ring-2 focus:ring-primary-container/20 focus:border-primary transition-all outline-none" id="confirmPassword" placeholder="••••••••" type="password"/>
+</div>
+</div>
+<!-- Terms -->
+<label class="flex items-start gap-md group cursor-pointer py-sm">
+<div class="relative flex items-center pt-0.5">
+<input class="peer h-5 w-5 rounded border-outline-variant bg-surface-container-low text-primary-container focus:ring-offset-background focus:ring-primary-container/40 transition-all cursor-pointer" type="checkbox"/>
+</div>
+<span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
+                            I agree to the <a class="text-primary hover:underline underline-offset-4" href="#">Terms of Service</a> and <a class="text-primary hover:underline underline-offset-4" href="#">Privacy Architecture</a>.
+                        </span>
+</label>
+<!-- CTA Actions -->
+<div class="flex flex-col gap-md pt-md">
+<button class="bg-primary-container text-on-primary-container font-semibold py-lg px-2xl rounded-lg hover:brightness-110 active:scale-[0.98] transition-all flex justify-center items-center gap-md shadow-lg shadow-primary-container/10">
+                            Create Account
+                            <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<div class="relative flex items-center justify-center py-sm">
+<div class="absolute inset-0 flex items-center"><div class="w-full border-t border-outline-variant/20"></div></div>
+<span class="relative bg-surface-container-low/50 px-md text-label-md text-on-surface-variant/60 uppercase tracking-widest">or</span>
+</div>
+<button class="bg-surface-variant/30 border border-outline-variant/50 text-on-surface font-semibold py-lg px-2xl rounded-lg hover:bg-surface-variant/50 active:scale-[0.98] transition-all flex justify-center items-center gap-md">
+<div class="w-5 h-5 bg-white rounded-full flex items-center justify-center overflow-hidden">
+<img class="w-4 h-4" data-alt="Official high-resolution Google 'G' icon logo rendered with vibrant clean primary colors against a crisp white circular background, symbolic of secure third-party enterprise authentication." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH-ZL6ErVDm-CnMZ7PrEaS3IBe8HZIEiyRsZ6fo_z1VhmVCgRW1AUQOOsptyRbCPhbmytr0EvYyWyMLqRbOK6e4YiXXrAgKFlt1CfFxnFyGoSpo7QEx7cKrFtxwc-jnJDKjRe8Lw3e5L2tu3vLRGtSoIGwOIt47ORk9qbRnmn53X7sZMbdsG_TdlipITc4NVqSPtpsTxK40vNLcfISO-LRy7iY9OT051aFe7Jsr-fAfPFFsw0sFf3jlOLBAQF1AbZXqo5608uP_O4"/>
+</div>
+                            Sign up with Google
+                        </button>
+</div>
+</form>
+<!-- Security Badges Footer -->
+<div class="flex flex-wrap items-center justify-center gap-lg border-t border-outline-variant/10 pt-lg relative z-10">
+<div class="flex items-center gap-sm opacity-60 grayscale hover:grayscale-0 transition-all cursor-default">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="text-label-md font-label-md text-on-surface uppercase tracking-tighter">SOC 2 TYPE II</span>
+</div>
+<div class="flex items-center gap-sm opacity-60 grayscale hover:grayscale-0 transition-all cursor-default">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">security</span>
+<span class="text-label-md font-label-md text-on-surface uppercase tracking-tighter">AES-256 BANK GRADE</span>
+</div>
+<div class="flex items-center gap-sm opacity-60 grayscale hover:grayscale-0 transition-all cursor-default">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="text-label-md font-label-md text-on-surface uppercase tracking-tighter">ISO 27001</span>
+</div>
+</div>
+<!-- Secondary Link -->
+<p class="text-center text-body-sm text-on-surface-variant pt-sm">
+                    Already an architect? <a class="text-primary font-semibold hover:underline underline-offset-4" href="/auth/login">Log in to dashboard</a>
+</p>
+</div>
+</div>
+</main>
+<!-- Global Visual Tokens Decoration (Asymmetric Blobs) -->
+<div class="fixed top-1/4 -right-1/4 w-[60vw] h-[60vw] bg-secondary-container/5 rounded-full blur-[160px] pointer-events-none"></div>
+<div class="fixed bottom-0 -left-1/4 w-[50vw] h-[50vw] bg-primary-container/5 rounded-full blur-[160px] pointer-events-none"></div>
+<script>
+        // Micro-interactions for form feedback
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', () => {
+                const label = input.parentElement.querySelector('label');
+                if(label) label.classList.add('text-primary');
+            });
+            input.addEventListener('blur', () => {
+                const label = input.parentElement.querySelector('label');
+                if(label) label.classList.remove('text-primary');
+            });
+        });
+
+        // Toggle password visibility (simplified mock)
+        const passToggle = document.querySelector('button .material-symbols-outlined:contains("visibility")');
+        if (passToggle) {
+            passToggle.parentElement.addEventListener('click', () => {
+                const input = document.getElementById('password');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    passToggle.textContent = 'visibility_off';
+                } else {
+                    input.type = 'password';
+                    passToggle.textContent = 'visibility';
+                }
+            });
+        }
+    </script>
+</body></html>

@@ -35,6 +35,7 @@ class WorkflowState(TypedDict, total=False):
     retrieved_rag_context: str
     retrieved_graph_context: str
     retrieved_memory_context: str
+    retrieved_tool_context: str
     final_context: str
 
     # Prompt & LLM Generation Payloads
@@ -67,6 +68,7 @@ def create_initial_state(
         "retrieved_rag_context": "",
         "retrieved_graph_context": "",
         "retrieved_memory_context": "",
+        "retrieved_tool_context": "",
         "final_context": "",
         "final_prompt": "",
         "prompt_context": None,
@@ -78,6 +80,7 @@ def create_initial_state(
             "rag_tokens": 0,
             "graph_tokens": 0,
             "memory_tokens": 0,
+            "tool_tokens": 0,
             "total_prompt_tokens": 0,
             "execution_time_ms": 0.0,
             "node_path": [],

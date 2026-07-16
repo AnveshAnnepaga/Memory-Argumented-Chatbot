@@ -1,7 +1,13 @@
 # File: app/main.py
+import os
+import sys
+
+# Prevent transformers from loading broken TensorFlow protobuf bindings on Windows
+os.environ.setdefault("USE_TF", "0")
+os.environ.setdefault("TF_ENABLE_ONEDNN_OPTS", "0")
+
 import asyncio
 import logging
-import sys
 from fastapi import Depends, FastAPI, Request
 
 if sys.platform == "win32":
@@ -77,6 +83,21 @@ def create_app() -> FastAPI:
                 "api_v1_prefix": config.API_PREFIX,
             },
             message=f"Welcome to {config.APP_NAME} API v{config.APP_VERSION}",
+            request_id=request_id,
+        )
+
+    # 6. Register Top-Level Healthcheck Endpoint (`5.10 Healthcheck Endpoint`)
+    @application.get("/health", response_model=APIResponse[dict], tags=["Monitoring"], summary="Healthcheck Endpoint")
+    async def top_level_health(
+        request_id: str = Depends(get_request_id),
+        config: Settings = Depends(get_config),
+    ):
+        """
+        Reports top-level application operational status for container healthchecks and load balancer probes.
+        """
+        return success_response(
+            data={"status": "healthy", "environment": config.APP_ENV, "version": config.APP_VERSION},
+            message="System operational",
             request_id=request_id,
         )
 

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Antigravity AI | Enterprise AI Assistant</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Inter+Tight:wght@500;600;700;800;900&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        :root {
+            --glass-border: rgba(132, 147, 150, 0.15);
+            --glass-surface: rgba(23, 27, 42, 0.6);
+        }
+        body {
+            background-color: #0f1321;
+            color: #dfe1f6;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: var(--glass-surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            border-color: rgba(0, 218, 243, 0.4);
+            background: rgba(23, 27, 42, 0.8);
+            box-shadow: 0 0 30px rgba(0, 218, 243, 0.05);
+        }
+        .aurora-glow {
+            background: 
+                radial-gradient(circle at 50% -10%, rgba(0, 229, 255, 0.08), transparent 60%),
+                radial-gradient(circle at 0% 100%, rgba(96, 1, 209, 0.05), transparent 40%),
+                #0f1321;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .text-glow {
+            text-shadow: 0 0 15px rgba(195, 245, 255, 0.3);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-container": "#00626e",
+                      "surface": "#0f1321",
+                      "on-surface-variant": "#bac9cc",
+                      "secondary-fixed-dim": "#d2bbff",
+                      "surface-container-low": "#171b2a",
+                      "on-secondary-container": "#c9aeff",
+                      "primary-fixed": "#9cf0ff",
+                      "error-container": "#93000a",
+                      "inverse-surface": "#dfe1f6",
+                      "surface-variant": "#303444",
+                      "surface-container": "#1b1f2e",
+                      "on-primary-fixed": "#001f24",
+                      "on-background": "#dfe1f6",
+                      "primary-container": "#00e5ff",
+                      "surface-container-high": "#262939",
+                      "on-tertiary-container": "#006645",
+                      "on-secondary-fixed": "#25005a",
+                      "tertiary": "#a8ffd2",
+                      "surface-dim": "#0f1321",
+                      "on-primary-fixed-variant": "#004f58",
+                      "surface-bright": "#353849",
+                      "on-tertiary": "#003824",
+                      "on-primary": "#00363d",
+                      "outline": "#849396",
+                      "surface-container-highest": "#303444",
+                      "secondary-container": "#6001d1",
+                      "on-secondary-fixed-variant": "#5a00c6",
+                      "on-error": "#690005",
+                      "on-tertiary-fixed-variant": "#005236",
+                      "tertiary-fixed-dim": "#4edea3",
+                      "secondary": "#d2bbff",
+                      "inverse-primary": "#006875",
+                      "background": "#0f1321",
+                      "tertiary-fixed": "#6ffbbe",
+                      "tertiary-container": "#5be9ad",
+                      "on-secondary": "#3f008e",
+                      "primary": "#c3f5ff",
+                      "primary-fixed-dim": "#00daf3",
+                      "error": "#ffb4ab",
+                      "on-error-container": "#ffdad6",
+                      "surface-tint": "#00daf3",
+                      "inverse-on-surface": "#2c303f",
+                      "on-tertiary-fixed": "#002113",
+                      "surface-container-lowest": "#0a0d1c",
+                      "secondary-fixed": "#eaddff",
+                      "outline-variant": "#3b494c",
+                      "on-surface": "#dfe1f6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "8px",
+                      "lg": "24px",
+                      "unit": "4px",
+                      "margin-mobile": "16px",
+                      "gutter": "24px",
+                      "md": "16px",
+                      "2xl": "64px",
+                      "margin-desktop": "48px",
+                      "xl": "40px",
+                      "xs": "4px"
+              },
+              "fontFamily": {
+                      "body-sm": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "headline-lg": ["Inter Tight"],
+                      "mono-code": ["JetBrains Mono"],
+                      "display-lg": ["Inter Tight"],
+                      "body-md": ["Inter"],
+                      "label-md": ["Inter"],
+                      "headline-md": ["Inter Tight"],
+                      "headline-lg-mobile": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "headline-lg": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "mono-code": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "display-lg": ["64px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                      "headline-lg-mobile": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+      </script>
+</head>
+<body class="aurora-glow">
+<!-- TopNavBar -->
+<nav class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 backdrop-blur-xl bg-surface/80 border-b border-outline-variant/10">
+<div class="flex items-center gap-sm">
+<span class="text-headline-md font-headline-md font-bold text-primary">Antigravity AI</span>
+</div>
+<div class="hidden md:flex items-center gap-lg">
+<a class="text-label-md font-label-md text-primary font-bold hover:text-primary transition-colors duration-200" href="#">Overview</a>
+<a class="text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Studio</a>
+<a class="text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Knowledge</a>
+<a class="text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Docs</a>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">search</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant border border-outline-variant flex items-center justify-center overflow-hidden">
+<img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlGm-cZJ7R2D-10NDAr6twHcf2iwQJoIa8tC6WZBlKzfb1_fkz0drEbAvqPY1-GLonyQbLK4LponJdB1PviHe1AFZpexo7lpb7mvprStwIN7IZciGMpCImSdR1gWs-gUGp9RyG9mA7o-UgxpMtkQcPjJzEeRHcYxG0VKwwDE7H2RDtDjyT2pOraTBDRBnnEQyskgxCmQBiHArotf4NRryU4jNPTepNuGDkEUKSUXl5VDcrszPZ5algVMRqw_xWiOfdTxPRB-ZgmrA"/>
+</div>
+</div>
+</nav>
+<!-- Hero Section -->
+<main class="relative min-h-screen pt-32 pb-24 px-margin-mobile md:px-margin-desktop overflow-hidden">
+<div class="relative z-10 max-w-4xl">
+<div class="inline-flex items-center px-md py-xs rounded-full bg-primary-container/10 border border-primary-container/20 mb-lg">
+<span class="text-label-md font-label-md text-primary-container uppercase tracking-widest">Memory-Augmented AI Platform</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg-mobile md:text-display-lg text-on-surface mb-md leading-tight max-w-3xl">
+                Enterprise AI Assistant with <span class="text-primary text-glow">Long-Term Memory</span> &amp; Intelligent Reasoning
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-xl max-w-2xl">
+                Empower your workforce with an autonomous architect that masters Knowledge Intelligence, Graph Reasoning, and real-time decision-making for complex enterprise workflows.
+            </p>
+<div class="flex flex-col sm:flex-row items-center gap-md">
+<button class="w-full sm:w-auto px-2xl py-md bg-primary-container text-on-primary-container font-label-md text-label-md rounded-lg hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary-container/20">
+                    Start Chatting
+                </button>
+<button class="w-full sm:w-auto px-2xl py-md bg-transparent border border-outline-variant text-primary font-label-md text-label-md rounded-lg hover:bg-surface-variant/30 active:scale-95 transition-all">
+                    Explore Platform
+                </button>
+</div>
+</div>
+<!-- Capability Grid -->
+<div class="mt-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+<!-- Reasoning -->
+<div class="glass-card p-lg rounded-xl">
+<div class="w-12 h-12 bg-primary-container/10 rounded-lg flex items-center justify-center mb-md border border-primary-container/20">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-surface mb-sm">Intelligent Reasoning</h3>
+<p class="text-body-md font-body-md text-on-surface-variant">Advanced chain-of-thought processing for multi-step enterprise logic and strategic planning.</p>
+</div>
+<!-- Knowledge -->
+<div class="glass-card p-lg rounded-xl">
+<div class="w-12 h-12 bg-tertiary-container/10 rounded-lg flex items-center justify-center mb-md border border-tertiary-container/20">
+<span class="material-symbols-outlined text-tertiary-container" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-surface mb-sm">Knowledge Graph</h3>
+<p class="text-body-md font-body-md text-on-surface-variant">Map complex entity relationships across your entire organization's data silos instantly.</p>
+</div>
+<!-- Memory -->
+<div class="glass-card p-lg rounded-xl">
+<div class="w-12 h-12 bg-secondary-container/10 rounded-lg flex items-center justify-center mb-md border border-secondary-container/20">
+<span class="material-symbols-outlined text-secondary-fixed-dim" style="font-variation-settings: 'FILL' 1;">memory</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-surface mb-sm">Long-Term Memory</h3>
+<p class="text-body-md font-body-md text-on-surface-variant">Persistent context retention that learns from every interaction to build deep tribal knowledge.</p>
+</div>
+<!-- Graph -->
+<div class="glass-card p-lg rounded-xl">
+<div class="w-12 h-12 bg-primary-container/10 rounded-lg flex items-center justify-center mb-md border border-primary-container/20">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">hub</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-surface mb-sm">Graph Reasoning</h3>
+<p class="text-body-md font-body-md text-on-surface-variant">Traverse billions of nodes to find hidden insights and non-obvious correlations in real-time.</p>
+</div>
+<!-- Tool Engines -->
+<div class="glass-card p-lg rounded-xl">
+<div class="w-12 h-12 bg-tertiary-container/10 rounded-lg flex items-center justify-center mb-md border border-tertiary-container/20">
+<span class="material-symbols-outlined text-tertiary-container" style="font-variation-settings: 'FILL' 1;">build</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-surface mb-sm">Tool Integration</h3>
+<p class="text-body-md font-body-md text-on-surface-variant">Autonomous tool-calling engine that executes actions across your SaaS stack securely.</p>
+</div>
+<!-- Enterprise Governance -->
+<div class="glass-card p-lg rounded-xl">
+<div class="w-12 h-12 bg-secondary-container/10 rounded-lg flex items-center justify-center mb-md border border-secondary-container/20">
+<span class="material-symbols-outlined text-secondary-fixed-dim" style="font-variation-settings: 'FILL' 1;">admin_panel_settings</span>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-surface mb-sm">Security &amp; Trust</h3>
+<p class="text-body-md font-body-md text-on-surface-variant">SOC 2 compliant infrastructure with robust RBAC and enterprise-grade encryption layers.</p>
+</div>
+</div>
+</main>
+<!-- Metrics Strip -->
+<section class="py-xl bg-surface-container-low border-y border-outline-variant/10">
+<div class="px-margin-mobile md:px-margin-desktop grid grid-cols-2 lg:grid-cols-4 gap-lg text-center">
+<div>
+<div class="text-display-lg font-display-lg text-primary text-glow">99.9%</div>
+<div class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest mt-xs">Uptime SLA</div>
+</div>
+<div>
+<div class="text-display-lg font-display-lg text-primary text-glow">&lt;400ms</div>
+<div class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest mt-xs">Response Time</div>
+</div>
+<div>
+<div class="text-display-lg font-display-lg text-primary text-glow">10M+</div>
+<div class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest mt-xs">Facts Indexed</div>
+</div>
+<div>
+<div class="text-display-lg font-display-lg text-primary text-glow">SOC 2</div>
+<div class="text-label-md font-label-md text-on-surface-variant uppercase tracking-widest mt-xs">Type II Certified</div>
+</div>
+</div>
+</section>
+<!-- Product Walkthrough -->
+<section class="py-2xl px-margin-mobile md:px-margin-desktop">
+<div class="max-w-6xl mx-auto">
+<h2 class="text-headline-lg font-headline-lg text-center text-on-surface mb-2xl">The Cognitive Flow</h2>
+<div class="relative">
+<div class="hidden lg:block absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-outline-variant/30 to-transparent -translate-y-1/2 -z-10"></div>
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-xl">
+<!-- Step 1 -->
+<div class="flex flex-col items-center text-center">
+<div class="w-16 h-16 rounded-full glass-card flex items-center justify-center mb-md border-primary-container/30 relative">
+<span class="material-symbols-outlined text-primary-container text-3xl">forum</span>
+<div class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary-container text-on-primary-container text-[10px] font-bold flex items-center justify-center">01</div>
+</div>
+<h4 class="text-headline-md font-headline-md text-on-surface mb-sm">Natural Input</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Chat naturally with the architect. It understands complex intent and context.</p>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col items-center text-center">
+<div class="w-16 h-16 rounded-full glass-card flex items-center justify-center mb-md border-tertiary-container/30 relative">
+<span class="material-symbols-outlined text-tertiary-container text-3xl">auto_stories</span>
+<div class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-tertiary-container text-on-tertiary-container text-[10px] font-bold flex items-center justify-center">02</div>
+</div>
+<h4 class="text-headline-md font-headline-md text-on-surface mb-sm">Knowledge Retrieval</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant">The AI queries your enterprise graph to find relevant documentation and data points.</p>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col items-center text-center">
+<div class="w-16 h-16 rounded-full glass-card flex items-center justify-center mb-md border-secondary-container/30 relative">
+<span class="material-symbols-outlined text-secondary-fixed-dim text-3xl">memory</span>
+<div class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold flex items-center justify-center">03</div>
+</div>
+<h4 class="text-headline-md font-headline-md text-on-surface mb-sm">Memory Synthesis</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Context from past interactions is recalled to ensure the response aligns with tribal knowledge.</p>
+</div>
+<!-- Step 4 -->
+<div class="flex flex-col items-center text-center">
+<div class="w-16 h-16 rounded-full glass-card flex items-center justify-center mb-md border-primary-container/30 relative">
+<span class="material-symbols-outlined text-primary-container text-3xl">task_alt</span>
+<div class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary-container text-on-primary-container text-[10px] font-bold flex items-center justify-center">04</div>
+</div>
+<h4 class="text-headline-md font-headline-md text-on-surface mb-sm">Verified Response</h4>
+<p class="text-body-sm font-body-sm text-on-surface-variant">A hallucination-free, reasoned response is delivered with full citations and action items.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Testimonial Logos -->
+<section class="py-xl border-t border-outline-variant/10">
+<div class="px-margin-mobile md:px-margin-desktop">
+<p class="text-center text-label-md font-label-md text-on-surface-variant uppercase tracking-widest mb-lg">Trusted by Enterprise Leaders</p>
+<div class="flex flex-wrap justify-center items-center gap-2xl opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
+<div class="h-8 w-32 bg-contain bg-no-repeat bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBQPyeXw5cVndd0VABr1RVeQ6kXuTIPjJDFUpbWI4AVcwXuvzhWXDj395OI6YPx-_1zJfSbjqZWlzCj1V2a8PKqv3df52ljf_SECqdl7tSDX0H41B2JwPKlDm6t-Q4ev0kvDQXFesQopZLK0SDRZg7Mgj6G0m5Ua7DpksBb3l0BW_g1VfiheL58AtvUrU4zb3dcCg8spjDsWKxa6dDtx19WJVhU_kWKIEhiknrAagvKXxXjYLNwlEcsGCBWQq3rtEctoD4goCQkr7I')"></div>
+<div class="h-8 w-32 bg-contain bg-no-repeat bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAO75t5gWQkQsTgAkVj5_toGV5_IjCJt7AJBRbxbc5B0ofdNWAcSyDIb3yC6-alltKDOmLS1p2ttrvN3W3XuEWOlmDv8B6i9ylAKpc6V0cPW_bv3pKxYJBvoDnCGZQXkt4AQ1xwdIxblgDsSKlum3ah7o5uWMqrWc51-m3ul9ye86KrqGbgdOwbsgWIZFmCeTz2VDo8H3CnPSuXLF2YOc-G260X2Sp_1WiJlUfaxuamPuWxvsbhpmLwdQQH7bO-5anL9nV55vqGgoo')"></div>
+<div class="h-8 w-32 bg-contain bg-no-repeat bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCInArLGoMqRZTqsw10ueEMPCZVvQaTA7zo8RM1L8l_Vq-1C0roGL_ooZPadd9fy_clOUxEm8CuYCIN5JSljKY2vmJmAV2Nl0hUCogNRiN5O34Ewm6jYG3PtjzVzxpawBzt-yity9uLIlE8W6Jns0j44naHCIjeBgrA6s-mGen1SURsRL96iGAfcUqlqjLJ9eRXeTgJQNbdOxg5cIZGlU51apMWMNqeZoLxv6ouRbr1TcNLAiOE-SbS1l-5rEyKMcoI6kBPMNUr8xE')"></div>
+<div class="h-8 w-32 bg-contain bg-no-repeat bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBcZD0Hi0LZojjpuAvkGY54QLnku8UWDHknICHvmFye0ZtdRjV1xrFur_Q84vdEpB8q0v6utAJeCg0XIPTGK-8EvN-v1RqgeX_JYGhZ-8-7AUo2w4MtZUTJXttFXGOXkPepWOzVxU7weo309-nfT4_D_tzOjYcvKtpuvcxaAFD55L0jHSSmOurW1s97ZPm22HQfNMWcNDb6hZFRJA5NOO43vU5cdIl67IeP3gMTtFf0-xOC9-t-CFonXXzAs9FatjTSAYQ7UixvEW0')"></div>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="bg-surface pt-2xl pb-lg border-t border-outline-variant/10">
+<div class="px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-4 gap-xl mb-2xl">
+<div class="col-span-1 md:col-span-1">
+<span class="text-headline-md font-headline-md font-bold text-primary mb-md block">Antigravity AI</span>
+<p class="text-body-sm font-body-sm text-on-surface-variant mb-md max-w-xs">
+                    Building the cognitive backbone for the next generation of enterprise intelligence.
+                </p>
+<div class="flex gap-md">
+<a class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" href="#">public</a>
+<a class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" href="#">code</a>
+<a class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" href="#">hub</a>
+</div>
+</div>
+<div>
+<h5 class="text-label-md font-label-md text-on-surface mb-lg uppercase tracking-widest">Platform</h5>
+<ul class="space-y-sm">
+<li><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary" href="#">Chat Studio</a></li>
+<li><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary" href="#">Knowledge Graph</a></li>
+<li><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary" href="#">Memory Engine</a></li>
+<li><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary" href="#">API Reference</a></li>
+</ul>
+</div>
+<div>
+<h5 class="text-label-md font-label-md text-on-surface mb-lg uppercase tracking-widest">Company</h5>
+<ul class="space-y-sm">
+<li><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary" href="#">Our Vision</a></li>
+<li><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary" href="#">Architecture</a></li>
+<li><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary" href="#">Careers</a></li>
+<li><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary" href="#">Contact</a></li>
+</ul>
+</div>
+<div>
+<h5 class="text-label-md font-label-md text-on-surface mb-lg uppercase tracking-widest">Legal</h5>
+<ul class="space-y-sm">
+<li><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary" href="#">Privacy Policy</a></li>
+<li><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary" href="#">Terms of Service</a></li>
+<li><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary" href="#">Security Portal</a></li>
+<li><a class="text-body-sm font-body-sm text-on-surface-variant hover:text-primary" href="#">Compliance</a></li>
+</ul>
+</div>
+</div>
+<div class="px-margin-mobile md:px-margin-desktop pt-lg border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-md">
+<span class="text-label-md font-label-md text-on-surface-variant">© 2024 Antigravity AI Corporation. All rights reserved.</span>
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></div>
+<span class="text-label-md font-label-md text-on-surface-variant">All Systems Operational</span>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interaction: Smooth Scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Micro-interaction: Parallax effect for cards
+        document.addEventListener('mousemove', (e) => {
+            const cards = document.querySelectorAll('.glass-card');
+            const x = (window.innerWidth / 2 - e.pageX) / 100;
+            const y = (window.innerHeight / 2 - e.pageY) / 100;
+            
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                if (rect.top < window.innerHeight && rect.bottom > 0) {
+                    card.style.transform = `rotateY(${x}deg) rotateX(${-y}deg)`;
+                }
+            });
+        });
+    </script>
+</body></html>

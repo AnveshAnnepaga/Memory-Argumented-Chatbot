@@ -18,6 +18,7 @@ from app.orchestration.schemas import (
 )
 from app.orchestration.state import create_initial_state
 from app.orchestration.workflow import orchestration_workflow
+from app.evaluation.pipeline import evaluation_pipeline
 
 logger = logging.getLogger("app.orchestration.pipeline")
 
@@ -67,12 +68,20 @@ class OrchestrationPipeline:
             if not response_text:
                 response_text = f"Processed request: '{clean_query}' via route {decision.route.value}."
 
+            # Read-only evaluation and observability hook
+            eval_report = await evaluation_pipeline.observe_workflow(
+                state=final_state,
+                response_text=response_text,
+                metadata=metadata.model_dump() if hasattr(metadata, "model_dump") else {}
+            )
+
             return WorkflowResponse(
                 response=response_text,
                 intent=intent,
                 router_decision=decision,
                 metadata=metadata,
-                prompt_context=prompt_ctx
+                prompt_context=prompt_ctx,
+                evaluation=eval_report.model_dump() if hasattr(eval_report, "model_dump") else {}
             )
         except Exception as exc:
             logger.error(f"Critical workflow execution failure in OrchestrationPipeline: {exc}", exc_info=True)

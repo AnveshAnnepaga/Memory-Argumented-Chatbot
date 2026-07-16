@@ -5,6 +5,7 @@ Contains every standalone node inside the LangGraph orchestration engine.
 Each node adheres strictly to the Single Responsibility Principle, does not directly communicate
 with other nodes, and interacts solely through the shared `WorkflowState`.
 """
+import json
 import logging
 import time
 from typing import Any, Dict, List, Optional
@@ -21,6 +22,7 @@ from app.orchestration.schemas import (
 )
 from app.orchestration.state import WorkflowState
 from app.rag.pipeline import rag_pipeline
+from app.tools.pipeline import tool_pipeline
 
 logger = logging.getLogger("app.orchestration.nodes")
 
@@ -203,23 +205,55 @@ async def memory_retrieval_node(state: WorkflowState) -> Dict[str, Any]:
 memory_placeholder_node = memory_retrieval_node
 
 
-async def tools_placeholder_node(state: WorkflowState) -> Dict[str, Any]:
+async def tool_execution_node(state: WorkflowState) -> Dict[str, Any]:
     """
-    (`Placeholder for Milestone 13 External Tools`)
-    Invokes external tool APIs or function calling blocks when requested.
-    Currently acts as a pass-through node.
+    (`Tool Execution Node for Milestone 13 External Tools`)
+    Executes external tool actions (`ToolPipeline`) based on deterministic routing
+    and injects structured real-time results into `retrieved_tool_context`.
     """
     node_path = list(state.get("node_path") or [])
-    node_path.append("tools_placeholder_node")
-    logger.debug("Executing tools placeholder node (Milestone 13 pass-through).")
-    return {"node_path": node_path}
+    node_path.append("tool_execution_node")
+    user_query = state.get("user_query", "")
+    user_id = state.get("user_id", "default")
+    conversation_id = state.get("conversation_id", "default")
+    metadata = dict(state.get("metadata") or {})
+    errors = list(state.get("errors") or [])
+
+    t0 = time.perf_counter()
+    tool_context_str = ""
+    tool_tokens = 0
+
+    try:
+        _, tool_context_str = await tool_pipeline.process_query(
+            user_query=user_query,
+            user_id=user_id,
+            session_id=conversation_id
+        )
+        tool_tokens = len(tool_context_str.split()) if tool_context_str else 0
+        if tool_tokens > 0:
+            logger.info(f"Retrieved {tool_tokens} words/tokens from Tool System in {(time.perf_counter()-t0)*1000:.1f}ms.")
+    except Exception as exc:
+        logger.warning(f"Tool execution node fallback triggered: {exc}")
+        errors.append(f"Tool Execution Error: {exc}")
+        tool_context_str = "[Tool System Offline: Execution failed]"
+
+    metadata["tool_tokens"] = tool_tokens
+    return {
+        "node_path": node_path,
+        "retrieved_tool_context": tool_context_str,
+        "metadata": metadata,
+        "errors": errors
+    }
+
+# Backward compatibility alias
+tools_placeholder_node = tool_execution_node
 
 
 async def context_merge_node(state: WorkflowState) -> Dict[str, Any]:
     """
     (`Context Merge Node`)
-    Consolidates retrieved RAG chunks, Knowledge Graph relationships, and Long-Term
-    Memory contexts into a single unified `final_context` block.
+    Consolidates retrieved RAG chunks, Knowledge Graph relationships, Long-Term
+    Memory contexts, and Real-Time External Tool intelligence into `final_context`.
     """
     node_path = list(state.get("node_path") or [])
     node_path.append("context_merge_node")
@@ -227,10 +261,15 @@ async def context_merge_node(state: WorkflowState) -> Dict[str, Any]:
     rag_ctx = state.get("retrieved_rag_context", "").strip()
     graph_ctx = state.get("retrieved_graph_context", "").strip()
     mem_ctx = state.get("retrieved_memory_context", "").strip()
+    tool_ctx = state.get("retrieved_tool_context", "").strip()
 
     merged_sections = []
     if mem_ctx and mem_ctx not in ("[Long-Term Memory Engine Offline: Using default context]", ""):
         merged_sections.append(f"=== LONG-TERM USER & SESSION MEMORY ===\n{mem_ctx}")
+
+    if tool_ctx and tool_ctx not in ("[Tool System Offline: Execution failed]", ""):
+        # tool_ctx already contains `=== REAL-TIME EXTERNAL TOOL INTELLIGENCE ===` prefix from ToolPipeline
+        merged_sections.append(tool_ctx)
 
     if rag_ctx and rag_ctx not in ("[RAG Engine Offline: No chunks retrieved]", ""):
         merged_sections.append(f"=== RETRIEVED DOCUMENTATION (HYBRID RAG) ===\n{rag_ctx}")
@@ -261,24 +300,19 @@ async def prompt_builder_node(state: WorkflowState) -> Dict[str, Any]:
     metadata = dict(state.get("metadata") or {})
 
     system_prompt = (
-        "You are Antigravity, an advanced Agentic AI system powered by LangGraph Orchestration, "
-        "Long-Term Memory System, Hybrid RAG, and Neo4j GraphRAG. Provide accurate, clear, and structured answers based "
-        "on the retrieved context provided below. If no context is needed or provided, answer directly."
+        "You are Antigravity, a highly intelligent, empathetic, and capable AI assistant created by Anvesh Mishra. "
+        "You provide thoughtful, precise, and helpful answers across coding, architecture, general knowledge, and reasoning tasks. "
+        "Talk naturally like ChatGPT or Claude—be concise, direct, and conversational without repeatedly announcing your backend modules or system architecture unless specifically asked. "
+        "IMPORTANT: Always output rich, beautifully formatted Markdown (headings, bullet points, code blocks) just like ChatGPT, Claude, and Gemini. NEVER output raw JSON dictionaries or wrap your answers in JSON format unless the user specifically asks for JSON string output."
     )
 
     if final_context:
         final_prompt = (
-            f"{system_prompt}\n\n"
-            f"--- CONTEXT ---\n{final_context}\n\n"
-            f"--- USER QUESTION ---\n{user_query}\n\n"
-            f"Answer:"
+            f"Here is relevant context that may help answer the question:\n{final_context}\n\n"
+            f"Question: {user_query}"
         )
     else:
-        final_prompt = (
-            f"{system_prompt}\n\n"
-            f"--- USER QUESTION ---\n{user_query}\n\n"
-            f"Answer:"
-        )
+        final_prompt = user_query
 
     prompt_tokens = len(final_prompt.split())
     metadata["total_prompt_tokens"] = prompt_tokens
@@ -303,37 +337,64 @@ async def prompt_builder_node(state: WorkflowState) -> Dict[str, Any]:
 async def llm_generation_node(state: WorkflowState) -> Dict[str, Any]:
     """
     (`LLM Generation Node`)
-    Submits the assembled `final_prompt` to Groq LLM (`llm_manager.generate`) and stores `llm_response`.
+    Submits the assembled messages (`system` + `user`) to Groq LLM (`llm_manager.generate`) and stores `llm_response`.
     Includes robust fallback so orchestration tests never hang or crash during offline testing.
     """
     node_path = list(state.get("node_path") or [])
     node_path.append("llm_generation_node")
     final_prompt = state.get("final_prompt", "")
+    prompt_ctx = state.get("prompt_context", {}) if isinstance(state.get("prompt_context"), dict) else {}
+    sys_prompt = prompt_ctx.get("system_prompt") or (
+        "You are Antigravity, a highly intelligent, empathetic, and capable AI assistant created by Anvesh Mishra. "
+        "Talk naturally like ChatGPT or Claude—be direct, engaging, and conversational without announcing internal architecture unless asked. "
+        "Always output rich Markdown. NEVER output raw JSON objects unless specifically asked."
+    )
     errors = list(state.get("errors") or [])
 
     t0 = time.perf_counter()
     llm_output = ""
 
     try:
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": final_prompt}
+        ]
         res = await llm_manager.generate(
-            messages=[{"role": "user", "content": final_prompt}],
-            temperature=0.3,
-            max_tokens=800
+            messages=messages,
+            temperature=0.5,
+            max_tokens=1500
         )
         llm_output = res.get("content", "").strip()
-        if not llm_output:
+        if llm_output.startswith("{") and llm_output.endswith("}"):
+            try:
+                parsed_out = json.loads(llm_output)
+                if isinstance(parsed_out, dict):
+                    extracted = parsed_out.get("response") or parsed_out.get("answer") or parsed_out.get("content") or parsed_out.get("text") or parsed_out.get("output")
+                    if isinstance(extracted, str) and extracted.strip():
+                        llm_output = extracted.strip()
+            except Exception:
+                pass
+        if not llm_output or llm_output.startswith("[Mock Completion"):
+            # If mock provider or empty, generate a clean conversational response
+            if llm_output.startswith("[Mock Completion"):
+                raise ValueError("Groq returned mock completion.")
             raise ValueError("LLM returned empty output string.")
         logger.info(f"Groq LLM generated response ({len(llm_output.split())} words) in {(time.perf_counter()-t0)*1000:.1f}ms.")
     except Exception as exc:
-        logger.warning(f"LLM generation node fallback triggered ({exc}). Using deterministic response synthesis.")
+        logger.warning(f"LLM generation node fallback triggered ({exc}). Using intelligent conversational synthesis.")
         errors.append(f"LLM Generation Fallback: {exc}")
-        # Build intelligent fallback response from final_context if LLM API is offline
-        user_query = state.get("user_query", "")
-        final_context = state.get("final_context", "")
-        if final_context:
-            llm_output = f"Synthesized Answer for '{user_query}':\nBased on retrieved knowledge:\n{final_context[:1000]}..."
+        user_query = state.get("user_query", "").strip()
+        final_context = state.get("final_context", "").strip()
+        
+        q_lower = user_query.lower()
+        if any(w in q_lower for w in ["hello", "hi", "hey", "greetings", "good morning", "good evening", "howdy"]):
+            llm_output = "Hello! I'm here and ready to help. What would you like to explore, build, or discuss today?"
+        elif any(w in q_lower for w in ["who are you", "what are you", "tell me about yourself"]):
+            llm_output = "I am Antigravity, an advanced AI assistant created by Anvesh Mishra. I'm designed to help you answer questions, analyze data, solve coding tasks, and reason through complex problems. How can I assist you today?"
+        elif final_context:
+            llm_output = f"Based on the relevant information found:\n\n{final_context}\n\nIf you'd like more specific details or deeper analysis on any part of this topic, feel free to let me know!"
         else:
-            llm_output = f"Hello! I am ready to process your query: '{user_query}'."
+            llm_output = f"I understand you're asking about '{user_query}'. Could you provide a bit more context or detail on what specific aspects you'd like to dive into so I can give you the best possible answer?"
 
     return {
         "node_path": node_path,
@@ -360,6 +421,7 @@ async def response_formatter_node(state: WorkflowState) -> Dict[str, Any]:
     metadata["execution_time_ms"] = round(total_ms, 2)
     metadata["node_path"] = node_path
     metadata["errors"] = errors
+    metadata["retrieved_chunks"] = state.get("retrieved_chunks") or []
 
     logger.info(f"Response formatter completed workflow in {total_ms:.1f}ms across {len(node_path)} nodes: {' -> '.join(node_path)}")
     return {
