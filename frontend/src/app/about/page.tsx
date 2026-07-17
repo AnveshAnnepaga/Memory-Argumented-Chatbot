@@ -1,118 +1,80 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+
+const techStack = [
+  { name: "Next.js 15", role: "App Router & SSR", icon: "layers" },
+  { name: "Tailwind CSS v4", role: "Cyber UI Design System", icon: "palette" },
+  { name: "FastAPI", role: "Async Python Backend", icon: "api" },
+  { name: "PostgreSQL + pgvector", role: "Relational & Vector Store", icon: "database" },
+  { name: "Neo4j GraphRAG", role: "Knowledge Graph Engine", icon: "hub" },
+  { name: "Pinecone", role: "1024-d Dense Indexing", icon: "scatter_plot" },
+  { name: "Groq Llama 3.3", role: "Real-Time LLM Inference", icon: "psychology" },
+  { name: "LangGraph", role: "Agent Orchestration", icon: "account_tree" },
+];
 
 export default function AboutPage() {
-  const milestones = [
-    { num: "01–04", title: "FastAPI Architecture, Config, Infrastructure & Repository Layer", status: "VERIFIED", desc: "Asynchronous server foundation with custom exception handlers, Pydantic V2 validation, and asyncpg/motor database connections." },
-    { num: "05–08", title: "Knowledge Ingestion, Pinecone Hybrid RAG & Neo4j GraphRAG", status: "VERIFIED", desc: "1024-d BAAI/bge vector embeddings (`Pinecone`), BM25 sparse keyword indices, RRF fusion, and Cypher multi-hop graph queries." },
-    { num: "11", title: "LangGraph Orchestration Brain", status: "VERIFIED", desc: "Stateful DAG conditional routing between direct LLM, Long-Term Memory, Specialized Tools, and Hybrid RAG retrieval paths." },
-    { num: "12", title: "PostgreSQL Long-Term Memory System", status: "VERIFIED", desc: "User profile synthesis, semantic fact deduplication (`confidence & importance scores`), episodic logs, and Ebbinghaus forgetting curves." },
-    { num: "13", title: "Tool Execution Framework", status: "VERIFIED", desc: "Decoupled tool modules (`CalculatorTool`, `WebSearchTool`, `SQLQueryTool`, `GraphCypherTool`) with zero coupling to orchestration logic." },
-    { num: "14", title: "Evaluation, Monitoring & Observability Platform", status: 'VERIFIED', desc: "Read-only hooks measuring Hallucination, Groundedness, warm vs cold latency breakdowns, and dynamic token cost tracking." },
-    { num: "15", title: "Productization, Next.js 15 Cyber UI & Production Deployment", status: "VERIFIED", desc: "Glassmorphism dark-mode Next.js 15 App Router frontend with real-time SSE streaming, Docker containerization, and NGINX reverse proxy." },
-  ];
-
-  const techStack = [
-    { name: "FastAPI (Python 3.11+)", category: "Backend REST & SSE Server" },
-    { name: "Next.js 15 (App Router)", category: "Frontend React 19 UI" },
-    { name: "LangGraph StateGraph", category: "Reasoning Orchestration DAG" },
-    { name: "Pinecone Vector Index", category: "Dense 1024-d Embeddings" },
-    { name: "Neo4j Graph Database", category: "GraphRAG Multi-Hop Entities" },
-    { name: "PostgreSQL + asyncpg", category: "Long-Term Memory & User Profiles" },
-    { name: "Groq API (Llama-3-70B)", category: "High-Throughput LLM Inference" },
-    { name: "Tailwind CSS v4 + Lucide", category: "Cyber Glassmorphism Styling" },
-    { name: "Zustand + TanStack Query", category: "State Management & Caching" },
-    { name: "Docker + NGINX", category: "Containerized Production Deployment" },
-  ];
-
   return (
-    <main className="ml-64 pt-16 min-h-screen bg-background text-on-surface pb-24">
-      {/* Top Header Bar */}
-      <header className="h-16 border-b border-outline-variant/20 bg-surface-container/50 backdrop-blur-md flex items-center justify-between px-lg fixed top-0 right-0 left-64 z-30">
-        <div className="flex items-center gap-md">
-          <span className="text-headline-md font-headline-md font-bold text-on-surface">About Platform OS</span>
-          <span className="text-label-md px-2.5 py-0.5 bg-primary-container/10 text-primary border border-primary/20 rounded-full font-bold">
-            Version 15.0 Production
-          </span>
-        </div>
-        <div className="flex items-center gap-sm">
-          <Link
-            href="/chat"
-            className="px-4 py-1.5 rounded-xl bg-primary text-on-primary text-label-md font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-primary/20"
-          >
-            <span className="material-symbols-outlined text-[18px]">forum</span>
-            <span>Launch Studio</span>
-          </Link>
-        </div>
-      </header>
-
-      <div className="p-lg md:p-margin-desktop max-w-[1600px] mx-auto space-y-lg">
-        {/* Author & Project Hero Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-outline-variant/30 glass-surface p-8 md:p-12 text-center bg-gradient-to-b from-surface-container/90 via-primary/5 to-surface-dim shadow-2xl">
-          <div className="absolute top-4 right-6 text-label-md font-mono-code text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20 flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
-            <span>PRODUCTION v15.0 COMPLETE</span>
+    <div className="min-h-full w-full bg-background text-on-surface pb-24 px-6 py-8">
+      <div className="w-full max-w-4xl mx-auto space-y-6">
+        {/* Page header */}
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-primary text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+              info
+            </span>
           </div>
-
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-tr from-primary to-secondary shadow-[0_0_30px_rgba(0,229,255,0.4)] mb-6">
-            <span className="material-symbols-outlined text-on-primary text-[32px]">terminal</span>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-[22px] font-bold text-on-surface leading-tight">About</h2>
+            <p className="text-[12px] text-on-surface-variant font-mono">Portfolio Showcase · Enterprise Intelligence Studio</p>
           </div>
+        </div>
 
-          <h1 className="text-display-sm md:text-display-md font-extrabold tracking-tight text-on-surface max-w-3xl mx-auto">
-            Antigravity Intelligence Engine
-          </h1>
-          <p className="mt-4 text-body-lg text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-            A production-grade, multi-module Enterprise AI Architecture designed and built by <strong className="text-primary font-bold">Anvesh Mishra</strong>. Combining state-of-the-art hybrid search, graph reasoning, and episodic memory into an autonomous system.
+        {/* Hero card */}
+        <div className="glass-card w-full p-8 rounded-2xl border border-outline-variant/20 text-center">
+          <div className="w-20 h-20 rounded-2xl bg-primary-container mx-auto flex items-center justify-center mb-5 shadow-xl shadow-primary-container/20 overflow-hidden">
+            <img src="/vyron-logo.png" alt="Vyron AI" className="w-12 h-12 object-contain" />
+          </div>
+          <h3 className="text-2xl font-black text-on-surface mb-2 tracking-tight">Vyron AI</h3>
+          <p className="text-[14px] text-primary font-mono mb-4">v1.0.0-backend-intelligence · Production Release</p>
+          <p className="text-body-md text-on-surface-variant w-full max-w-2xl mx-auto leading-relaxed">
+            Vyron AI — an intelligent assistant with long-term memory, RAG-powered knowledge search, Neo4j graph traversal, and real-time SSE streaming — engineered end-to-end for production reliability and speed.
           </p>
         </div>
 
-        {/* Milestones Verification Timeline */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-2 border-b border-outline-variant/20 pb-3">
-            <span className="material-symbols-outlined text-primary text-[24px]">verified</span>
-            <h2 className="text-headline-lg font-bold text-on-surface">Milestone Verification Matrix (`01 – 15`)</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {milestones.map((m, i) => (
-              <div key={i} className="glass-surface p-6 rounded-2xl border border-outline-variant/20 shadow-md flex flex-col justify-between space-y-4 hover:border-primary/40 transition-all">
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-label-md font-mono-code font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20">
-                      Milestone {m.num}
-                    </span>
-                    <span className="text-[11px] font-mono-code font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                      {m.status}
-                    </span>
-                  </div>
-                  <h3 className="text-headline-md font-bold text-on-surface leading-snug">{m.title}</h3>
-                  <p className="text-body-sm text-on-surface-variant leading-relaxed font-mono-code">{m.desc}</p>
+        {/* Tech stack */}
+        <div className="glass-card w-full p-6 rounded-2xl border border-outline-variant/20">
+          <h3 className="text-[15px] font-bold text-on-surface mb-4 flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[18px]">stack</span>
+            Technology Stack
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 w-full">
+            {techStack.map((tech) => (
+              <div key={tech.name} className="flex items-center gap-3 p-3.5 rounded-xl bg-surface-container-high border border-outline-variant/10 hover:border-primary/20 transition-colors w-full">
+                <div className="w-9 h-9 rounded-lg bg-primary-container/20 flex items-center justify-center flex-shrink-0">
+                  <span className="material-symbols-outlined text-primary text-[18px]">{tech.icon}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-on-surface truncate">{tech.name}</p>
+                  <p className="text-[11px] text-on-surface-variant truncate">{tech.role}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Technical Architecture Matrix */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-2 border-b border-outline-variant/20 pb-3">
-            <span className="material-symbols-outlined text-secondary text-[24px]">layers</span>
-            <h2 className="text-headline-lg font-bold text-on-surface">Full-Stack Technology Stack</h2>
+        {/* Author */}
+        <div className="glass-card w-full p-6 rounded-2xl border border-outline-variant/20 flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-secondary-container to-primary-container flex items-center justify-center flex-shrink-0 shadow-lg">
+            <span className="text-xl font-black text-on-primary-container">AM</span>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {techStack.map((t, idx) => (
-              <div key={idx} className="glass-surface p-4 rounded-xl border border-outline-variant/10 shadow-sm flex flex-col justify-center text-center space-y-1">
-                <span className="text-body-sm font-bold text-on-surface truncate">{t.name}</span>
-                <span className="text-[11px] text-on-surface-variant/70 font-mono-code truncate">{t.category}</span>
-              </div>
-            ))}
+          <div className="flex-1 min-w-0">
+            <p className="text-[15px] font-bold text-on-surface">Anvesh Mishra</p>
+            <p className="text-[13px] text-on-surface-variant mt-0.5 truncate">Architect & Engineer · Vyron AI Platform</p>
+            <p className="text-[11px] font-mono text-primary mt-1">anvesh@vyron.ai</p>
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

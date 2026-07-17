@@ -45,6 +45,21 @@ class KnowledgeVector(BaseModel):
     score: Optional[float] = None  # Similarity search score when retrieved
 
 
+class DocumentFile(BaseModel):
+    """Domain model representing an uploaded file stored as a BLOB in PostgreSQL."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    filename: str
+    mime_type: str
+    size_bytes: int = 0
+    file_hash: str = ""
+    blob_data: Optional[bytes] = None
+    extracted_text: Optional[str] = None
+    document_id: Optional[str] = None
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
 class SemanticMemoryVector(BaseModel):
     """Domain model representing a semantic vector memory item (`7.4 Semantic Memory Repository`)."""
     model_config = ConfigDict(from_attributes=True)

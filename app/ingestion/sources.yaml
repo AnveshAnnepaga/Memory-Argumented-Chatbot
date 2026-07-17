@@ -1,121 +1,356 @@
 # File: app/ingestion/sources.yaml
 # Trusted Knowledge Sources (`Milestone 8 Source Registry`)
+# Each source can specify per-source crawl limits and sitemap preference.
 
 programming:
   - name: Python Documentation
     url: https://docs.python.org/3/
     trust: tier1
     priority: high
-    allowed_paths: ["/3/tutorial/", "/3/library/"]
-    excluded_paths: ["/3/whatsnew/"]
+    allowed_paths: ["/3/tutorial/", "/3/library/", "/3/reference/", "/3/howto/"]
+    excluded_paths: ["/3/whatsnew/", "/3/distutils/"]
+    max_pages: 200
+    max_depth: 5
+    use_sitemap: true
 
   - name: FastAPI Documentation
     url: https://fastapi.tiangolo.com/
     trust: tier1
     priority: high
-    allowed_paths: ["/tutorial/", "/advanced/"]
+    allowed_paths: ["/tutorial/", "/advanced/", "/reference/"]
     excluded_paths: ["/release-notes/"]
+    max_pages: 100
+    max_depth: 3
+    use_sitemap: true
 
   - name: LangChain Documentation
     url: https://python.langchain.com/docs/
     trust: tier1
     priority: high
     allowed_paths: ["/docs/"]
+    max_pages: 150
+    max_depth: 4
+    use_sitemap: true
 
   - name: LangGraph Documentation
     url: https://langchain-ai.github.io/langgraph/
     trust: tier1
     priority: high
+    max_pages: 80
+    max_depth: 3
+    use_sitemap: true
 
   - name: SQLAlchemy Documentation
     url: https://docs.sqlalchemy.org/en/20/
     trust: tier1
     priority: high
+    max_pages: 120
+    max_depth: 4
+    use_sitemap: true
 
   - name: PostgreSQL Documentation
     url: https://www.postgresql.org/docs/current/
     trust: tier1
     priority: high
+    max_pages: 150
+    max_depth: 3
+    use_sitemap: true
 
   - name: MongoDB Documentation
     url: https://www.mongodb.com/docs/manual/
     trust: tier1
     priority: high
+    max_pages: 120
+    max_depth: 3
+    use_sitemap: true
 
   - name: Neo4j Documentation
     url: https://neo4j.com/docs/cypher-manual/current/
     trust: tier1
     priority: high
+    max_pages: 80
+    max_depth: 3
+    use_sitemap: true
 
   - name: Pinecone Documentation
     url: https://docs.pinecone.io/
     trust: tier1
     priority: high
+    max_pages: 60
+    max_depth: 3
+    use_sitemap: true
 
   - name: Docker Documentation
     url: https://docs.docker.com/
     trust: tier1
     priority: medium
+    max_pages: 100
+    max_depth: 3
+    use_sitemap: true
 
   - name: Git Documentation
     url: https://git-scm.com/doc
     trust: tier1
     priority: medium
+    max_pages: 50
+    max_depth: 2
+    use_sitemap: true
+
+  - name: React Documentation
+    url: https://react.dev/
+    trust: tier1
+    priority: high
+    max_pages: 80
+    max_depth: 3
+    use_sitemap: true
+
+  - name: Next.js Documentation
+    url: https://nextjs.org/docs
+    trust: tier1
+    priority: high
+    max_pages: 100
+    max_depth: 3
+    use_sitemap: true
+
+  - name: Node.js Documentation
+    url: https://nodejs.org/docs/latest/api/
+    trust: tier1
+    priority: high
+    max_pages: 100
+    max_depth: 3
+    use_sitemap: true
+
+  - name: TypeScript Documentation
+    url: https://www.typescriptlang.org/docs/
+    trust: tier1
+    priority: high
+    max_pages: 80
+    max_depth: 3
+    use_sitemap: true
+
+  - name: MDN Web Docs
+    url: https://developer.mozilla.org/en-US/docs/Web
+    trust: tier2
+    priority: high
+    max_pages: 200
+    max_depth: 4
+    use_sitemap: true
+
+  - name: Tailwind CSS Documentation
+    url: https://tailwindcss.com/docs
+    trust: tier1
+    priority: medium
+    max_pages: 50
+    max_depth: 2
+    use_sitemap: true
 
 ai_ml:
   - name: Hugging Face Documentation
     url: https://huggingface.co/docs
     trust: tier1
     priority: high
+    max_pages: 150
+    max_depth: 4
+    use_sitemap: true
 
   - name: PyTorch Documentation
     url: https://pytorch.org/docs/stable/
     trust: tier1
     priority: high
+    max_pages: 150
+    max_depth: 4
+    use_sitemap: true
+
+  - name: TensorFlow Documentation
+    url: https://www.tensorflow.org/api_docs
+    trust: tier1
+    priority: high
+    max_pages: 120
+    max_depth: 3
+    use_sitemap: true
 
   - name: Scikit-learn Documentation
     url: https://scikit-learn.org/stable/user_guide.html
     trust: tier1
     priority: high
+    max_pages: 100
+    max_depth: 3
+    use_sitemap: true
+
+  - name: JAX Documentation
+    url: https://jax.readthedocs.io/en/latest/
+    trust: tier1
+    priority: high
+    max_pages: 60
+    max_depth: 3
+    use_sitemap: true
+
+  - name: spaCy Documentation
+    url: https://spacy.io/api/
+    trust: tier1
+    priority: high
+    max_pages: 50
+    max_depth: 2
+    use_sitemap: true
+
+  - name: MLflow Documentation
+    url: https://mlflow.org/docs/latest/
+    trust: tier1
+    priority: medium
+    max_pages: 60
+    max_depth: 3
+    use_sitemap: true
+
+  - name: LangSmith Documentation
+    url: https://docs.smith.langchain.com/
+    trust: tier1
+    priority: medium
+    max_pages: 40
+    max_depth: 2
+    use_sitemap: true
 
 trusted_org:
-  - name: MDN Web Docs
-    url: https://developer.mozilla.org/en-US/docs/Web
+  - name: Kubernetes Documentation
+    url: https://kubernetes.io/docs/
+    trust: tier1
+    priority: high
+    max_pages: 150
+    max_depth: 4
+    use_sitemap: true
+
+  - name: AWS Documentation
+    url: https://docs.aws.amazon.com/
+    trust: tier1
+    priority: high
+    max_pages: 200
+    max_depth: 4
+    use_sitemap: true
+
+  - name: GitHub Actions Documentation
+    url: https://docs.github.com/en/actions
+    trust: tier2
+    priority: high
+    max_pages: 80
+    max_depth: 3
+    use_sitemap: true
+
+  - name: Nginx Documentation
+    url: https://nginx.org/en/docs/
     trust: tier2
     priority: medium
+    max_pages: 60
+    max_depth: 3
+    use_sitemap: true
+
+  - name: Redis Documentation
+    url: https://redis.io/docs/latest/
+    trust: tier1
+    priority: high
+    max_pages: 80
+    max_depth: 3
+    use_sitemap: true
+
+  - name: RabbitMQ Documentation
+    url: https://www.rabbitmq.com/documentation.html
+    trust: tier2
+    priority: medium
+    max_pages: 50
+    max_depth: 2
+    use_sitemap: true
 
   - name: NASA
     url: https://www.nasa.gov/science/
     trust: tier2
     priority: low
+    max_pages: 30
+    max_depth: 2
+    use_sitemap: false
 
   - name: WHO
     url: https://www.who.int/health-topics
     trust: tier2
     priority: low
+    max_pages: 30
+    max_depth: 2
+    use_sitemap: false
 
-  - name: NumPy Documentation
-    url: https://numpy.org/doc/stable/
+  - name: Mozilla Observatory
+    url: https://observatory.mozilla.org/
     trust: tier2
-    priority: medium
+    priority: low
+    max_pages: 10
+    max_depth: 1
+    use_sitemap: false
 
-  - name: Pandas Documentation
-    url: https://pandas.pydata.org/docs/user_guide/
+  - name: OWASP Guide
+    url: https://cheatsheetseries.owasp.org/
     trust: tier2
-    priority: medium
-
-  - name: Matplotlib Documentation
-    url: https://matplotlib.org/stable/users/
-    trust: tier2
-    priority: medium
+    priority: high
+    max_pages: 40
+    max_depth: 2
+    use_sitemap: true
 
 community:
   - name: Wikipedia AI Portal
     url: https://en.wikipedia.org/wiki/Portal:Artificial_intelligence
     trust: tier3
     priority: low
+    max_pages: 50
+    max_depth: 2
+    use_sitemap: true
 
-  - name: Carefully Selected Technical Blogs
+  - name: Lilian Weng Blog
     url: https://lilianweng.github.io/
     trust: tier3
     priority: low
+    max_pages: 30
+    max_depth: 2
+    use_sitemap: true
+
+  - name: Martin Fowler Bliki
+    url: https://martinfowler.com/bliki/
+    trust: tier3
+    priority: medium
+    max_pages: 40
+    max_depth: 2
+    use_sitemap: true
+
+  - name: System Design Resources
+    url: https://github.com/madd86/awesome-system-design
+    trust: tier3
+    priority: low
+    max_pages: 10
+    max_depth: 1
+    use_sitemap: false
+
+  - name: Papers With Code
+    url: https://paperswithcode.com/
+    trust: tier3
+    priority: low
+    max_pages: 40
+    max_depth: 2
+    use_sitemap: true
+
+  - name: ArXiv AI Papers
+    url: https://arxiv.org/list/cs.AI/recent
+    trust: tier3
+    priority: low
+    max_pages: 30
+    max_depth: 1
+    use_sitemap: false
+
+  - name: Real Python Tutorials
+    url: https://realpython.com/
+    trust: tier3
+    priority: medium
+    max_pages: 80
+    max_depth: 3
+    use_sitemap: true
+
+  - name: FreeCodeCamp News
+    url: https://www.freecodecamp.org/news/
+    trust: tier3
+    priority: medium
+    max_pages: 80
+    max_depth: 3
+    use_sitemap: true

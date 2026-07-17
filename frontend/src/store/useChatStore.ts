@@ -13,13 +13,25 @@ export interface CitationItem {
   type?: 'RAG' | 'GRAPH' | 'MEMORY';
 }
 
+export type MessageMetadata = Record<string, unknown>;
+export type MessageEvaluation = Record<string, unknown>;
+
+export interface FileAttachment {
+  fileId: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  type: 'pdf' | 'docx' | 'image' | 'other';
+}
+
 export interface Message {
   id: string;
   sender: 'user' | 'assistant';
   text: string;
   timestamp: string;
-  metadata?: any;
-  evaluation?: any;
+  attachments?: FileAttachment[];
+  metadata?: MessageMetadata;
+  evaluation?: MessageEvaluation;
   citations?: CitationItem[];
   steps?: ChatStep[];
 }
@@ -41,7 +53,18 @@ interface ChatState {
   
   // Actions
   addMessage: (msg: Message) => void;
-  updateLastAssistantMessage: (updater: (prevText: string, prevSteps?: ChatStep[]) => { text: string; steps?: ChatStep[]; evaluation?: any; citations?: CitationItem[]; metadata?: any }) => void;
+  updateLastAssistantMessage: (
+    updater: (
+      prevText: string,
+      prevSteps?: ChatStep[]
+    ) => {
+      text: string;
+      steps?: ChatStep[];
+      evaluation?: MessageEvaluation;
+      citations?: CitationItem[];
+      metadata?: MessageMetadata;
+    }
+  ) => void;
   setActiveSteps: (steps: ChatStep[]) => void;
   setIsStreaming: (streaming: boolean) => void;
   clearMessages: () => void;
@@ -54,41 +77,12 @@ interface ChatState {
   togglePinConversation: (id: string) => void;
 }
 
-export const useChatStore = create<ChatState>((set, get) => ({
-  messages: [
-    {
-      id: 'welcome-msg',
-      sender: 'assistant',
-      text: "👋 Welcome to **Antigravity Intelligence Engine v15.0**.\n\nI am connected to all 6 backend intelligence layers:\n- **LangGraph Orchestration** (Reasoning Engine)\n- **Hybrid RAG** (Pinecone + BM25 + Cross-Encoder)\n- **GraphRAG** (Neo4j Knowledge Graph)\n- **Long-Term Memory** (PostgreSQL User Profile & Semantic Facts)\n- **Tool Execution Framework** (External APIs & Math Engines)\n- **Observability Platform** (Real-Time Hallucination & Latency Evaluation)\n\nAsk me anything or test complex reasoning below!",
-      timestamp: new Date().toISOString(),
-    }
-  ],
-  activeConversationId: 'default-session',
+export const useChatStore = create<ChatState>((set) => ({
+  messages: [],
+  activeConversationId: '',
   isStreaming: false,
   activeSteps: [],
-  conversations: [
-    {
-      id: 'default-session',
-      title: 'General Exploration & Architecture',
-      createdAt: new Date().toISOString(),
-      pinned: true,
-      messageCount: 1,
-    },
-    {
-      id: 'rag-test-session',
-      title: 'FastAPI & RAG Performance Test',
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-      pinned: false,
-      messageCount: 4,
-    },
-    {
-      id: 'graph-test-session',
-      title: 'Neo4j Graph Traversal Analysis',
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-      pinned: false,
-      messageCount: 2,
-    }
-  ],
+  conversations: [],
 
   addMessage: (msg) => set((state) => ({
     messages: [...state.messages, msg],

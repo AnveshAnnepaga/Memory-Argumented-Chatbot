@@ -112,7 +112,12 @@ class MemoryRetriever:
         profile = await self.retrieve_profile(user_id)
         semantics = await self.retrieve_semantic_memories(user_id, query=query, top_k=top_semantic)
         episodes = await self.retrieve_recent_episodes(user_id, limit=top_episodes)
-        window = await self.retrieve_conversation_window(user_id, conversation_id=conversation_id, limit=window_limit)
+        window_all = await self.retrieve_conversation_window(user_id, conversation_id=conversation_id, limit=50)
+        if window_all:
+            window_all.sort(key=lambda x: x.timestamp)
+            window = window_all[-8:]
+        else:
+            window = window_all
 
         formatted_lines: List[str] = []
 
@@ -142,12 +147,16 @@ class MemoryRetriever:
             for i, ep in enumerate(episodes, 1):
                 formatted_lines.append(f"[{i}] {ep.event} (Timestamp: {ep.timestamp.strftime('%Y-%m-%d %H:%M')})")
 
-        # 4. Conversation Window Section
+        # 4. Conversation Window Section - summarized inline to avoid leaking a raw
+        # "User: ... / Assistant: ..." transcript that the LLM might echo back. Each
+        # turn is rendered as a single neutral bullet line. We also cap total turns.
         if window:
             formatted_lines.append("\n=== SHORT-TERM CONVERSATION WINDOW (RECENT TURNS) ===")
             for turn in window:
-                role_label = "User" if turn.role == "user" else "Assistant"
-                formatted_lines.append(f"{role_label}: {turn.content}")
+                snippet = turn.content.strip()
+                if len(snippet) > 4000:
+                    snippet = snippet[:3997].rstrip() + "..."
+                formatted_lines.append(f"• {turn.role.capitalize()}: {snippet}")
 
         formatted_str = "\n".join(formatted_lines).strip()
         if not formatted_str:

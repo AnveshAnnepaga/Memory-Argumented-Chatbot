@@ -1,18 +1,36 @@
 import { API_BASE_URL } from './api';
 
+type SSEPayload = Record<string, unknown>;
+
+interface SSEStepPayload {
+  node: string;
+  status: string;
+  label: string;
+}
+
+interface SSETokenPayload {
+  text: string;
+}
+
 export interface SSECallbacks {
-  onStep?: (data: { node: string; status: string; label: string }) => void;
-  onToken?: (data: { text: string }) => void;
-  onEvaluation?: (data: any) => void;
-  onComplete?: (data: any) => void;
+  onStep?: (data: SSEStepPayload) => void;
+  onToken?: (data: SSETokenPayload) => void;
+  onEvaluation?: (data: SSEPayload) => void;
+  onComplete?: (data: SSEPayload) => void;
   onError?: (error: string) => void;
+}
+
+function isRecord(value: unknown): value is SSEPayload {
+  return typeof value === 'object' && value !== null;
 }
 
 export async function streamChatQuery(
   query: string,
   conversationId: string = 'default',
   userId: string = 'default',
-  callbacks: SSECallbacks
+  callbacks: SSECallbacks,
+  fileIds: string[] = [],
+  imageIds: string[] = [],
 ): Promise<void> {
   const url = `${API_BASE_URL}/chat/stream`;
 
@@ -26,6 +44,8 @@ export async function streamChatQuery(
         query,
         conversation_id: conversationId,
         user_id: userId,
+        file_ids: fileIds,
+        image_ids: imageIds,
       }),
     });
 
@@ -61,26 +81,40 @@ export async function streamChatQuery(
         if (!dataStr) continue;
 
         try {
-          const parsed = JSON.parse(dataStr);
+          const parsed: unknown = JSON.parse(dataStr);
+          if (!isRecord(parsed)) {
+            continue;
+          }
+
           if (eventType === 'step' && callbacks.onStep) {
-            callbacks.onStep(parsed);
+            callbacks.onStep({
+              node: typeof parsed.node === 'string' ? parsed.node : 'unknown',
+              status: typeof parsed.status === 'string' ? parsed.status : 'UNKNOWN',
+              label: typeof parsed.label === 'string' ? parsed.label : 'Processing...',
+            });
           } else if (eventType === 'token' && callbacks.onToken) {
-            callbacks.onToken(parsed);
+            callbacks.onToken({
+              text: typeof parsed.text === 'string' ? parsed.text : '',
+            });
           } else if (eventType === 'evaluation' && callbacks.onEvaluation) {
             callbacks.onEvaluation(parsed);
           } else if (eventType === 'complete' && callbacks.onComplete) {
             callbacks.onComplete(parsed);
           } else if (eventType === 'error' && callbacks.onError) {
-            callbacks.onError(parsed.error || 'Unknown streaming error');
+            callbacks.onError(
+              typeof parsed.error === 'string' ? parsed.error : 'Unknown streaming error'
+            );
           }
-        } catch (e) {
-          console.error('Error parsing SSE data chunk:', dataStr, e);
+        } catch (error) {
+          console.error('Error parsing SSE data chunk:', dataStr, error);
         }
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (callbacks.onError) {
-      callbacks.onError(error.message || 'Stream connection failed');
+      callbacks.onError(
+        error instanceof Error ? error.message : 'Stream connection failed'
+      );
     }
   }
 }

@@ -10,6 +10,7 @@ from app.repositories.postgres.knowledge_source_repository import KnowledgeSourc
 from app.repositories.postgres.evaluation_repository import EvaluationRepository, EvaluationResultTable
 from app.repositories.postgres.configuration_repository import ConfigurationRepository, ConfigurationItemTable
 from app.repositories.postgres.document_repository import DocumentRepository, DocumentTable
+from app.repositories.postgres.document_file_repository import DocumentFileRepository, DocumentFileTable
 
 __all__ = [
     "UserRepository",
@@ -26,4 +27,6 @@ __all__ = [
     "ConfigurationItemTable",
     "DocumentRepository",
     "DocumentTable",
+    "DocumentFileRepository",
+    "DocumentFileTable",
 ]

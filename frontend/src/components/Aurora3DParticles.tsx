@@ -2,6 +2,14 @@
 
 import React, { useEffect, useRef } from "react";
 
+type Particle = {
+  x: number;
+  y: number;
+  z: number;
+  size: number;
+  color: string;
+};
+
 export default function Aurora3DParticles() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -11,47 +19,57 @@ export default function Aurora3DParticles() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let animationFrameId: number;
+    let animationFrameId = 0;
     let angle = 0;
+    const particleCount = 110;
+    const colors = ["#00E5FF", "#D2BBFF", "#6FFFBE", "#3E517A"];
+    let particles: Particle[] = [];
+
+    const getSize = () => {
+      const parent = canvas.parentElement;
+      const w = parent ? parent.clientWidth : window.innerWidth;
+      const h = parent ? parent.clientHeight : window.innerHeight;
+      return { w: Math.max(1, w), h: Math.max(1, h) };
+    };
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     const resize = () => {
-      const parent = canvas.parentElement;
-      if (parent) {
-        canvas.width = parent.clientWidth;
-        canvas.height = parent.clientHeight;
-      } else {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+      const { w, h } = getSize();
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // Rebuild particle sphere scaled to current viewport so it always fits.
+      const baseRadius = Math.min(w, h) * 0.55;
+      const radiusJitter = Math.min(w, h) * 0.12;
+      particles = [];
+      for (let i = 0; i < particleCount; i++) {
+        const phi = Math.acos(1 - 2 * (i + 0.5) / particleCount);
+        const theta = Math.PI * (1 + Math.sqrt(5)) * (i + 0.5);
+        const radius = baseRadius + Math.random() * radiusJitter;
+        particles.push({
+          x: radius * Math.sin(phi) * Math.cos(theta),
+          y: radius * Math.sin(phi) * Math.sin(theta),
+          z: radius * Math.cos(phi),
+          size: 1.2 + Math.random() * 2.2,
+          color: colors[i % colors.length],
+        });
       }
     };
+
     resize();
     window.addEventListener("resize", resize);
 
-    // Create 3D particles sphere/network
-    const particleCount = 110;
-    const particles: { x: number; y: number; z: number; size: number; color: string }[] = [];
-    const colors = ["#00E5FF", "#D2BBFF", "#6FFBBE", "#3E517A"];
-
-    for (let i = 0; i < particleCount; i++) {
-      // Golden spiral distribution on sphere
-      const phi = Math.acos(1 - 2 * (i + 0.5) / particleCount);
-      const theta = Math.PI * (1 + Math.sqrt(5)) * (i + 0.5);
-      const radius = 280 + Math.random() * 80;
-
-      particles.push({
-        x: radius * Math.sin(phi) * Math.cos(theta),
-        y: radius * Math.sin(phi) * Math.sin(theta),
-        z: radius * Math.cos(phi),
-        size: 1.5 + Math.random() * 2.5,
-        color: colors[i % colors.length],
-      });
-    }
-
     const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
+      const { w, h } = getSize();
+      ctx.clearRect(0, 0, w, h);
+      const centerX = w / 2;
+      const centerY = h / 2;
       const fov = 500;
+      const depthOffset = Math.min(w, h) * 1.1;
 
       angle += 0.0035;
       const cosA = Math.cos(angle);
@@ -59,40 +77,39 @@ export default function Aurora3DParticles() {
       const cosP = Math.cos(angle * 0.4);
       const sinP = Math.sin(angle * 0.4);
 
-      // Project particles
       const projected = particles.map((p) => {
         const x1 = p.x * cosA - p.z * sinA;
         const z1 = p.z * cosA + p.x * sinA;
         const y2 = p.y * cosP - z1 * sinP;
         const z2 = z1 * cosP + p.y * sinP;
 
-        const scale = fov / (fov + z2 + 400);
+        const scale = fov / (fov + z2 + depthOffset);
         const screenX = centerX + x1 * scale;
         const screenY = centerY + y2 * scale;
 
         return { ...p, screenX, screenY, scale, z2 };
       });
 
-      // Sort back-to-front
+      // Back-to-front so closer particles overlay farther ones.
       projected.sort((a, b) => b.z2 - a.z2);
 
-      // Draw faint connections between nearby particles
       ctx.lineWidth = 0.8;
       for (let i = 0; i < projected.length; i++) {
         for (let j = i + 1; j < projected.length; j++) {
-          const dist = Math.hypot(projected[i].screenX - projected[j].screenX, projected[i].screenY - projected[j].screenY);
+          const a = projected[i];
+          const b = projected[j];
+          const dist = Math.hypot(a.screenX - b.screenX, a.screenY - b.screenY);
           if (dist < 110) {
-            const alpha = (1 - dist / 110) * 0.18 * ((projected[i].scale + projected[j].scale) / 2);
+            const alpha = (1 - dist / 110) * 0.18 * ((a.scale + b.scale) / 2);
             ctx.strokeStyle = `rgba(0, 229, 255, ${alpha.toFixed(3)})`;
             ctx.beginPath();
-            ctx.moveTo(projected[i].screenX, projected[i].screenY);
-            ctx.lineTo(projected[j].screenX, projected[j].screenY);
+            ctx.moveTo(a.screenX, a.screenY);
+            ctx.lineTo(b.screenX, b.screenY);
             ctx.stroke();
           }
         }
       }
 
-      // Draw particles
       projected.forEach((p) => {
         const r = Math.max(1, p.size * p.scale);
         ctx.beginPath();
@@ -124,7 +141,7 @@ export default function Aurora3DParticles() {
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-      <canvas ref={canvasRef} className="w-full h-full opacity-65" />
+      <canvas ref={canvasRef} className="block w-full h-full opacity-65" />
     </div>
   );
 }

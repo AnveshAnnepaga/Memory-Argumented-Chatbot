@@ -1,425 +1,239 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useCallback } from "react";
+import FileUploader from "@/components/FileUploader";
+import { api } from "@/lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+interface UploadedFileInfo {
+  fileId: string;
+  filename: string;
+  type: 'pdf' | 'docx' | 'image' | 'other';
+  uploading: boolean;
+  error?: string;
+}
 
 interface DocumentItem {
   id: string;
-  filename: string;
-  file_type: string;
-  size_bytes?: number;
-  status: string;
-  created_at?: string;
-  chunks_count?: number;
+  title: string;
+  source: string;
+  category: string;
+  word_count: number;
+  updated_at: string;
+  chunks: number;
 }
 
 export default function KnowledgeCenterPage() {
-  const [documents, setDocuments] = useState<DocumentItem[]>([
-    {
-      id: "doc-1",
-      filename: "2026_Enterprise_Security_Manifesto.pdf",
-      file_type: "PDF",
-      size_bytes: 12400000,
-      status: "INDEXED",
-      created_at: "2026-07-15",
-      chunks_count: 84,
-    },
-    {
-      id: "doc-2",
-      filename: "docs.antigravity.ai/architecture/v15",
-      file_type: "URL",
-      size_bytes: 0,
-      status: "INDEXED",
-      created_at: "2026-07-14",
-      chunks_count: 42,
-    },
-    {
-      id: "doc-3",
-      filename: "LangGraph_Hybrid_Routing_Policy.docx",
-      file_type: "DOCX",
-      size_bytes: 450000,
-      status: "INDEXED",
-      created_at: "2026-07-12",
-      chunks_count: 18,
-    },
-  ]);
-  const [activeFilter, setActiveFilter] = useState("All");
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showUploader, setShowUploader] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFileInfo[]>([]);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<DocumentItem[]>([]);
 
-  useEffect(() => {
-    axios
-      .get(`${API_URL}/api/v1/knowledge/documents`)
-      .then((res) => {
-        if (res.data && Array.isArray(res.data.documents) && res.data.documents.length > 0) {
-          setDocuments(res.data.documents);
-        }
-      })
-      .catch(() => {
-        // Fallback to initial high-fidelity sample state if backend is offline
-      });
+  const loadDocuments = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.get<{ documents: DocumentItem[] }>('/knowledge/documents', { skip: 0, limit: 50 });
+      if (data && Array.isArray(data.documents)) {
+        setDocuments(data.documents);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const handleSimulateUpload = () => {
-    setIsUploading(true);
-    setUploadProgress(15);
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          setDocuments((old) => [
-            {
-              id: `doc-${Date.now()}`,
-              filename: "Production_Vector_Embeddings_Log.pdf",
-              file_type: "PDF",
-              size_bytes: 8400000,
-              status: "INDEXED",
-              created_at: new Date().toISOString().split("T")[0],
-              chunks_count: 112,
-            },
-            ...old,
-          ]);
-          return 0;
-        }
-        return prev + 25;
-      });
-    }, 600);
-  };
+  React.useEffect(() => {
+    loadDocuments();
+  }, [loadDocuments]);
 
-  const filteredDocs = documents.filter((doc) => {
-    if (activeFilter === "Documents") return doc.file_type === "PDF" || doc.file_type === "DOCX";
-    if (activeFilter === "URLs") return doc.file_type === "URL";
-    return true;
-  });
+  const handleFilesUploaded = useCallback((files: UploadedFileInfo[]) => {
+    setUploadedFiles((prev) => [...prev, ...files]);
+    setShowUploader(false);
+    setTimeout(() => loadDocuments(), 1000);
+  }, [loadDocuments]);
+
+  const handleSearch = useCallback(async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const data = await api.get<{ results: DocumentItem[] }>('/knowledge/query', { q: searchQuery, top_k: 10 });
+      if (data && Array.isArray(data.results)) {
+        setSearchResults(data.results);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchQuery]);
+
+  const displayDocs = searchResults.length > 0 ? searchResults : documents;
 
   return (
-    <main className="ml-64 pt-16 min-h-screen bg-background text-on-surface pb-24">
-      {/* Top Header Bar */}
-      <header className="h-16 border-b border-outline-variant/20 bg-surface-container/50 backdrop-blur-md flex items-center justify-between px-lg fixed top-0 right-0 left-64 z-30">
-        <div className="flex items-center gap-md">
-          <span className="text-headline-md font-headline-md font-bold text-on-surface">Knowledge Center</span>
-          <span className="text-label-md px-2.5 py-0.5 bg-primary-container/10 text-primary border border-primary/20 rounded-full font-bold">
-            Pinecone &amp; Neo4j Synced
-          </span>
-        </div>
-        <div className="flex items-center gap-sm">
-          <span className="text-label-md text-on-surface-variant">Hybrid Sparse-Dense RAG Active</span>
-        </div>
-      </header>
-
-      <div className="p-lg md:p-margin-desktop max-w-[1600px] mx-auto space-y-lg">
-        {/* Page Header & Stats */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-lg">
-          <div className="space-y-sm">
-            <div className="flex items-center gap-2 text-primary font-mono-code text-label-md uppercase tracking-[0.2em]">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-              Neural Knowledge Base
-            </div>
-            <h1 className="text-headline-lg font-headline-lg text-on-surface">Vector &amp; Graph Indexing</h1>
-          </div>
-          <div className="flex flex-wrap gap-md">
-            <div className="glass-surface px-lg py-md rounded-xl flex items-center gap-md border border-outline-variant/10">
-              <div className="p-3 rounded-lg bg-surface-container-high text-primary">
-                <span className="material-symbols-outlined">database</span>
-              </div>
-              <div>
-                <p className="text-label-md font-label-md text-on-surface-variant">Total Sources</p>
-                <p className="text-headline-md font-headline-md font-bold">{documents.length + 1200}</p>
-              </div>
-            </div>
-            <div className="glass-surface px-lg py-md rounded-xl flex items-center gap-md border border-outline-variant/10">
-              <div className="p-3 rounded-lg bg-surface-container-high text-tertiary">
-                <span className="material-symbols-outlined">article</span>
-              </div>
-              <div>
-                <p className="text-label-md font-label-md text-on-surface-variant">Indexed Chunks</p>
-                <p className="text-headline-md font-headline-md font-bold">48,291</p>
-              </div>
-            </div>
-            <div className="glass-surface px-lg py-md rounded-xl flex items-center gap-md border border-outline-variant/10">
-              <div className="p-3 rounded-lg bg-surface-container-high text-secondary">
-                <span className="material-symbols-outlined">sync</span>
-              </div>
-              <div>
-                <p className="text-label-md font-label-md text-on-surface-variant">Processing Queue</p>
-                <p className="text-headline-md font-headline-md font-bold">{isUploading ? "1" : "0"}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Layout Grid */}
-        <div className="grid grid-cols-12 gap-lg">
-          {/* Left Column: Knowledge Management */}
-          <div className="col-span-12 xl:col-span-9 space-y-lg">
-            {/* Upload Zone */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
-              <div
-                onClick={handleSimulateUpload}
-                className="glass-surface border-2 border-dashed border-outline-variant/30 rounded-xl p-lg flex flex-col items-center justify-center text-center group hover:border-primary/50 transition-all cursor-pointer relative overflow-hidden h-64 shadow-lg shadow-black/20"
+    <div className="min-h-full bg-background text-on-surface pb-24 px-6 py-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Page header */}
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center">
+              <span
+                className="material-symbols-outlined text-primary text-[22px]"
+                style={{ fontVariationSettings: "'FILL' 1" }}
               >
-                <div className="mb-4 p-4 rounded-full bg-surface-container-highest text-primary-container group-hover:scale-110 transition-transform">
-                  <span className="material-symbols-outlined text-[40px]">upload_file</span>
-                </div>
-                <h3 className="text-body-lg font-bold mb-1 text-on-surface">Ingest New Intelligence</h3>
-                <p className="text-body-sm text-on-surface-variant">Click or Drag &amp; Drop PDF, DOCX, or Paste URL</p>
-                <div className="mt-4 flex gap-2">
-                  <span className="text-label-md font-label-md bg-surface-variant/40 px-3 py-1 rounded-full border border-outline-variant/20">.pdf</span>
-                  <span className="text-label-md font-label-md bg-surface-variant/40 px-3 py-1 rounded-full border border-outline-variant/20">.docx</span>
-                  <span className="text-label-md font-label-md bg-surface-variant/40 px-3 py-1 rounded-full border border-outline-variant/20">.txt</span>
-                </div>
-              </div>
+                auto_stories
+              </span>
+            </div>
+            <div>
+              <h2 className="text-[22px] font-bold text-on-surface leading-tight">
+                Knowledge Base
+              </h2>
+              <p className="text-[12px] text-on-surface-variant">
+                Upload PDFs, DOCX, images, or audio to build your knowledge base
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowUploader(!showUploader)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary-container text-[13px] font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-md shadow-primary-container/20"
+          >
+            <span className="material-symbols-outlined text-[16px]">upload_file</span>
+            Upload
+          </button>
+        </div>
 
-              {/* Processing Mockup or Active Status */}
-              <div className="glass-surface rounded-xl p-lg flex flex-col justify-between border border-outline-variant/10 h-64 relative overflow-hidden shadow-lg shadow-black/20">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-sm">
-                    <span className="material-symbols-outlined text-primary text-[28px]">description</span>
-                    <div>
-                      <h4 className="text-body-md font-bold text-on-surface">
-                        {isUploading ? "Production_Vector_Embeddings_Log.pdf" : "System_Architecture_Knowledge.pdf"}
-                      </h4>
-                      <p className="text-label-md text-on-surface-variant">
-                        {isUploading ? "8.4 MB • Processing Vector Embeddings" : "12.4 MB • Fully Indexed & Grounded"}
+        {/* Upload area (toggled) */}
+        {showUploader && (
+          <div className="glass-card p-4 rounded-xl border border-outline-variant/20">
+            <FileUploader onFilesUploaded={handleFilesUploaded} />
+            {uploadedFiles.length > 0 && (
+              <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {uploadedFiles.filter(f => !f.uploading).map((f) => (
+                  <div key={f.fileId} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: f.error ? '#ef4444' : '#10b981' }}>
+                    <span>{f.error ? '✗' : '✓'}</span>
+                    <span>{f.filename}</span>
+                    {f.error && <span style={{ color: '#ef4444' }}>{f.error}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { label: "Documents", value: documents.length.toString() || "—", icon: "description" },
+            { label: "Uploaded Files", value: uploadedFiles.length.toString() || "0", icon: "upload_file" },
+            { label: "Vector Dims", value: "1024", icon: "scatter_plot" },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="glass-card p-5 rounded-xl border border-outline-variant/20 flex items-center gap-4"
+            >
+              <div className="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-primary text-[20px]">
+                  {stat.icon}
+                </span>
+              </div>
+              <div>
+                <p className="text-[13px] text-on-surface-variant">{stat.label}</p>
+                <p className="text-2xl font-black text-primary">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Search bar */}
+        <div className="glass-surface rounded-xl border border-outline-variant/20 flex items-center gap-3 px-4 py-3 shadow-lg">
+          <span className="material-symbols-outlined text-on-surface-variant text-[20px]">
+            search
+          </span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+            placeholder="Search the knowledge base..."
+            className="flex-1 bg-transparent border-none focus:outline-none text-[14px] text-on-surface placeholder:text-on-surface-variant/40"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => { setSearchQuery(""); setSearchResults([]); }}
+              className="text-on-surface-variant hover:text-on-surface transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          )}
+        </div>
+
+        {/* Documents list */}
+        <div className="glass-card p-8 rounded-2xl border border-outline-variant/20">
+          <h3 className="text-[16px] font-bold text-on-surface mb-2 flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[18px]">library_books</span>
+            Indexed Documents
+          </h3>
+          <p className="text-[13px] text-on-surface-variant mb-6">
+            Search and explore indexed knowledge to power informed answers across all conversations.
+          </p>
+
+          {isLoading && (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+            </div>
+          )}
+
+          {!isLoading && displayDocs.length === 0 && uploadedFiles.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 gap-4">
+              <span
+                className="material-symbols-outlined text-on-surface-variant/30 text-6xl"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
+                auto_stories
+              </span>
+              <div className="text-center">
+                <p className="text-[15px] font-semibold text-on-surface-variant">No documents indexed yet</p>
+                <p className="text-[13px] text-on-surface-variant/60 mt-1">
+                  Upload documents to populate your knowledge base.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowUploader(true)}
+                className="mt-2 flex items-center gap-2 px-5 py-2.5 bg-primary-container text-on-primary-container text-[13px] font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all"
+              >
+                <span className="material-symbols-outlined text-[16px]">upload_file</span>
+                Upload First Document
+              </button>
+            </div>
+          )}
+
+          {!isLoading && displayDocs.length > 0 && (
+            <div className="space-y-3">
+              {displayDocs.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-center justify-between p-4 rounded-xl bg-surface-variant/20 border border-outline-variant/10 hover:border-primary/30 transition-all"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="material-symbols-outlined text-primary text-[20px]">description</span>
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-semibold text-on-surface truncate">{doc.title}</p>
+                      <p className="text-[11px] text-on-surface-variant">
+                        {doc.source} · {doc.word_count?.toLocaleString()} words · {doc.chunks || 0} chunks
                       </p>
                     </div>
                   </div>
-                  <span className="text-label-md font-label-md text-primary animate-pulse">
-                    {isUploading ? `${uploadProgress}%` : "100%"}
-                  </span>
+                  <span className="text-[11px] text-on-surface-variant flex-shrink-0">{doc.category}</span>
                 </div>
-
-                <div className="space-y-md">
-                  <div className="flex justify-between text-label-md font-label-md text-on-surface-variant">
-                    <span className={uploadProgress >= 25 ? "text-primary" : ""}>Tokenization</span>
-                    <span className={uploadProgress >= 50 ? "text-primary" : ""}>Chunking</span>
-                    <span className={uploadProgress >= 75 ? "text-primary" : ""}>Pinecone Embedding</span>
-                  </div>
-                  <div className="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-primary h-full rounded-full transition-all duration-300 relative"
-                      style={{ width: `${isUploading ? uploadProgress : 100}%` }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_2s_infinite]"></div>
-                    </div>
-                  </div>
-                  <p className="text-body-sm italic text-on-surface-variant/80">
-                    {isUploading
-                      ? '"Extracting hierarchical semantic chunks & cross-encoder vectors..."'
-                      : '"Ready for sub-180ms hybrid semantic retrieval across all shards."'}
-                  </p>
-                </div>
-
-                <div className="flex justify-end gap-sm">
-                  <button
-                    onClick={() => setIsUploading(false)}
-                    className="text-label-md font-label-md px-4 py-2 rounded-lg border border-outline-variant/30 hover:bg-surface-variant/40 transition-all cursor-pointer"
-                  >
-                    {isUploading ? "Cancel" : "Refresh Index"}
-                  </button>
-                  <button className="text-label-md font-label-md px-4 py-2 rounded-lg bg-primary-container text-on-primary-container font-bold shadow-md cursor-pointer">
-                    View Vector Shards
-                  </button>
-                </div>
-              </div>
+              ))}
             </div>
-
-            {/* Filter & Search Toolbar */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-md glass-surface p-sm rounded-xl border border-outline-variant/10">
-              <div className="flex items-center gap-1 p-1 bg-surface-container-lowest rounded-lg">
-                {["All", "Documents", "URLs", "Datasets"].map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setActiveFilter(filter)}
-                    className={`px-6 py-2 rounded-md text-label-md font-bold transition-all cursor-pointer ${
-                      activeFilter === filter
-                        ? "bg-primary-container text-on-primary-container shadow-sm"
-                        : "hover:bg-surface-variant/40 text-on-surface-variant"
-                    }`}
-                  >
-                    {filter}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-sm pr-sm">
-                <button className="p-2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer">
-                  <span className="material-symbols-outlined">filter_list</span>
-                </button>
-                <button className="p-2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer">
-                  <span className="material-symbols-outlined">sort</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Document Table */}
-            <div className="glass-surface rounded-xl overflow-hidden border border-outline-variant/10 shadow-xl">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-surface-container-high/50 border-b border-outline-variant/10">
-                    <tr>
-                      <th className="px-lg py-4 text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">
-                        Document Name
-                      </th>
-                      <th className="px-lg py-4 text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th className="px-lg py-4 text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">
-                        Size / Chunks
-                      </th>
-                      <th className="px-lg py-4 text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-lg py-4 text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">
-                        Date Indexed
-                      </th>
-                      <th className="px-lg py-4 text-label-md font-label-md text-on-surface-variant uppercase tracking-wider text-right">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline-variant/10">
-                    {filteredDocs.map((doc) => (
-                      <tr key={doc.id} className="hover:bg-surface-variant/20 transition-colors group">
-                        <td className="px-lg py-4">
-                          <div className="flex items-center gap-md">
-                            <div
-                              className={`p-2 rounded bg-surface-container ${
-                                doc.file_type === "PDF"
-                                  ? "text-primary"
-                                  : doc.file_type === "URL"
-                                  ? "text-secondary"
-                                  : "text-tertiary"
-                              }`}
-                            >
-                              <span className="material-symbols-outlined text-[20px]">
-                                {doc.file_type === "PDF"
-                                  ? "picture_as_pdf"
-                                  : doc.file_type === "URL"
-                                  ? "link"
-                                  : "description"}
-                              </span>
-                            </div>
-                            <span className="text-body-sm font-bold text-on-surface">{doc.filename}</span>
-                          </div>
-                        </td>
-                        <td className="px-lg py-4 text-body-sm text-on-surface-variant">{doc.file_type}</td>
-                        <td className="px-lg py-4 text-body-sm text-on-surface-variant">
-                          {doc.size_bytes
-                            ? `${(doc.size_bytes / 1024 / 1024).toFixed(1)} MB (${doc.chunks_count || 40} chunks)`
-                            : `${doc.chunks_count || 42} chunks`}
-                        </td>
-                        <td className="px-lg py-4">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-tertiary/10 text-tertiary-container border border-tertiary/20">
-                            <span className="w-1.5 h-1.5 rounded-full bg-tertiary-container"></span>
-                            {doc.status || "INDEXED"}
-                          </span>
-                        </td>
-                        <td className="px-lg py-4 text-body-sm text-on-surface-variant">
-                          {doc.created_at || "Oct 12, 2026"}
-                        </td>
-                        <td className="px-lg py-4 text-right">
-                          <div className="flex justify-end gap-sm opacity-60 group-hover:opacity-100 transition-opacity">
-                            <button className="p-1.5 hover:text-primary transition-colors cursor-pointer">
-                              <span className="material-symbols-outlined text-[20px]">visibility</span>
-                            </button>
-                            <button className="p-1.5 hover:text-error transition-colors cursor-pointer">
-                              <span className="material-symbols-outlined text-[20px]">delete</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="p-lg border-t border-outline-variant/10 flex justify-between items-center bg-surface-container-low/30">
-                <p className="text-label-md text-on-surface-variant">
-                  Showing 1-{filteredDocs.length} of {documents.length + 1200} documents
-                </p>
-                <div className="flex items-center gap-sm">
-                  <button className="p-2 rounded-lg bg-surface-container-high hover:bg-surface-variant/60 transition-colors cursor-pointer">
-                    <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                  </button>
-                  <span className="text-label-md px-3 font-bold text-on-surface">1 / 121</span>
-                  <button className="p-2 rounded-lg bg-surface-container-high hover:bg-surface-variant/60 transition-colors cursor-pointer">
-                    <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Activity Sidebar */}
-          <div className="col-span-12 xl:col-span-3 space-y-lg">
-            <div className="space-y-md">
-              <h2 className="text-body-md font-bold flex items-center gap-2 text-on-surface">
-                <span className="material-symbols-outlined text-secondary">bolt</span>
-                Latest Activity
-              </h2>
-
-              {/* Activity Feed Glass Cards */}
-              <div className="space-y-sm">
-                <div className="glass-surface p-md rounded-xl ai-reasoning-line border border-outline-variant/10 hover:translate-x-1 transition-transform cursor-pointer">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="text-label-md font-bold text-secondary">Index Updated</span>
-                    <span className="text-[10px] text-on-surface-variant">2m ago</span>
-                  </div>
-                  <p className="text-body-sm font-medium mb-1 text-on-surface">Vector cluster #829 optimized.</p>
-                  <p className="text-[11px] text-on-surface-variant/70 italic">
-                    Retrieved 42 new cross-references from Security Manifesto.
-                  </p>
-                </div>
-
-                <div className="glass-surface p-md rounded-xl border border-outline-variant/10 hover:translate-x-1 transition-transform cursor-pointer opacity-80">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="text-label-md font-bold text-tertiary">New Source Ingested</span>
-                    <span className="text-[10px] text-on-surface-variant">1h ago</span>
-                  </div>
-                  <p className="text-body-sm font-medium mb-1 text-on-surface">LangGraph_Hybrid_Routing_Policy.docx</p>
-                  <p className="text-[11px] text-on-surface-variant/70">Source: External DOCX • User: Anvesh Mishra</p>
-                </div>
-
-                <div className="glass-surface p-md rounded-xl border border-outline-variant/10 hover:translate-x-1 transition-transform cursor-pointer opacity-60">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="text-label-md font-bold text-primary">System Notice</span>
-                    <span className="text-[10px] text-on-surface-variant">Yesterday</span>
-                  </div>
-                  <p className="text-body-sm font-medium mb-1 text-on-surface">Pinecone BM25 Sparse Index Synced</p>
-                  <p className="text-[11px] text-on-surface-variant/70">Latency improved by 14.2ms across all queries.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Storage & Index Health */}
-            <div className="glass-surface p-lg rounded-xl border border-outline-variant/10 space-y-md">
-              <h3 className="text-label-md font-bold text-on-surface uppercase tracking-wider">Vector Shard Health</h3>
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-[12px] mb-1">
-                    <span className="text-on-surface-variant">Pinecone Dense Storage</span>
-                    <span className="font-bold text-primary">64% (3.2 GB)</span>
-                  </div>
-                  <div className="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-primary h-full w-[64%] shadow-[0_0_8px_#00e5ff]"></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-[12px] mb-1">
-                    <span className="text-on-surface-variant">Neo4j Graph Relationships</span>
-                    <span className="font-bold text-secondary">41% (1.8M Edges)</span>
-                  </div>
-                  <div className="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-secondary h-full w-[41%] shadow-[0_0_8px_#d2bbff]"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

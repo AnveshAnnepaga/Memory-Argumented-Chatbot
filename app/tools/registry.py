@@ -13,6 +13,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
 
+import httpx
 from app.core.logger import get_logger
 from app.tools.schemas import ToolDefinition, ToolRequest
 
@@ -119,19 +120,50 @@ async def _handle_weather(request: ToolRequest) -> Dict[str, Any]:
     loc_clean = location.title()
     logger.info("Executing Weather tool for location: '%s'", loc_clean)
     
-    # Deterministic simulated weather profiles for major locations
-    temp_c = 30.0 if "Hyder" in loc_clean else (22.0 if "San Fran" in loc_clean else 26.5)
-    temp_f = round(temp_c * 9 / 5 + 32, 1)
+    # Use WeatherAPI.com for real weather data
+    api_key = "0f77a707f7494f60bc755224261707"
+    url = f"http://api.weatherapi.com/v1/current.json"
+    params = {"key": api_key, "q": loc_clean, "aqi": "no"}
     
-    return {
-        "location": loc_clean,
-        "temperature_celsius": temp_c,
-        "temperature_fahrenheit": temp_f,
-        "condition": "Partly Cloudy" if temp_c < 25 else "Sunny",
-        "humidity_percent": 45,
-        "wind_speed_kmh": 14.2,
-        "observation_time_utc": datetime.now(timezone.utc).isoformat()
-    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+        
+        current = data.get("current", {})
+        location_info = data.get("location", {})
+        
+        return {
+            "location": f"{location_info.get('name', loc_clean)}, {location_info.get('region', '')}, {location_info.get('country', '')}".strip(", "),
+            "temperature_celsius": current.get("temp_c"),
+            "temperature_fahrenheit": current.get("temp_f"),
+            "condition": current.get("condition", {}).get("text"),
+            "humidity_percent": current.get("humidity"),
+            "wind_speed_kmh": current.get("wind_kph"),
+            "wind_direction": current.get("wind_dir"),
+            "feels_like_celsius": current.get("feelslike_c"),
+            "feels_like_fahrenheit": current.get("feelslike_f"),
+            "uv_index": current.get("uv"),
+            "observation_time_utc": current.get("last_updated"),
+            "is_real_data": True
+        }
+    except Exception as e:
+        logger.warning(f"WeatherAPI call failed for '{loc_clean}': {e}. Falling back to simulated data.")
+        # Fallback to simulated data
+        temp_c = 30.0 if "Hyder" in loc_clean else (22.0 if "San Fran" in loc_clean else 26.5)
+        temp_f = round(temp_c * 9 / 5 + 32, 1)
+        return {
+            "location": loc_clean,
+            "temperature_celsius": temp_c,
+            "temperature_fahrenheit": temp_f,
+            "condition": "Partly Cloudy" if temp_c < 25 else "Sunny",
+            "humidity_percent": 45,
+            "wind_speed_kmh": 14.2,
+            "observation_time_utc": datetime.now(timezone.utc).isoformat(),
+            "is_real_data": False,
+            "error": str(e)
+        }
 
 
 async def _handle_calculator(request: ToolRequest) -> Dict[str, Any]:
@@ -256,6 +288,149 @@ async def _handle_translation(request: ToolRequest) -> Dict[str, Any]:
     }
 
 
+async def _handle_web_search(request: ToolRequest) -> Dict[str, Any]:
+    """Real-time web search using DuckDuckGo HTML scraping (no API key needed)."""
+    query = request.parameters.get("query", request.query).strip()
+    max_results = int(request.parameters.get("max_results", 5))
+    logger.info("Executing Web Search tool for query: '%s'", query)
+
+    try:
+        # Use DuckDuckGo HTML endpoint
+        url = "https://html.duckduckgo.com/html/"
+        params = {"q": query}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        async with httpx.AsyncClient(timeout=15.0, headers=headers) as client:
+            resp = await client.post(url, data=params)
+            resp.raise_for_status()
+            html = resp.text
+
+        # Parse results from HTML
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, "html.parser")
+        results = []
+
+        for result in soup.select(".result__body")[:max_results]:
+            title_elem = result.select_one(".result__title")
+            snippet_elem = result.select_one(".result__snippet")
+            url_elem = result.select_one(".result__url")
+
+            if title_elem:
+                title = title_elem.get_text(strip=True)
+                snippet = snippet_elem.get_text(strip=True) if snippet_elem else ""
+                link = title_elem.find("a", href=True)
+                link_href = link["href"] if link else ""
+                if link_href and link_href.startswith("//"):
+                    link_href = "https:" + link_href
+                results.append({
+                    "title": title,
+                    "snippet": snippet,
+                    "url": link_href
+                })
+
+        logger.info("Web search returned %d results for query: '%s'", len(results), query)
+        return {
+            "query": query,
+            "results_count": len(results),
+            "results": results,
+            "source": "duckduckgo"
+        }
+    except Exception as e:
+        logger.warning("Web search failed for '%s': %s. Falling back to mock.", query, e)
+        # Fallback to mock results
+        return {
+            "query": query,
+            "results_count": 3,
+            "results": [
+                {"title": f"Official Documentation: {query}", "snippet": f"Comprehensive guide for {query}", "url": f"https://docs.example.com/{query.lower().replace(' ', '-')}"},
+                {"title": f"Technical Analysis: {query}", "snippet": f"Performance benchmarks for {query}", "url": f"https://tech.example.com/{query.lower().replace(' ', '-')}"},
+                {"title": f"Community Discussion: {query}", "snippet": f"Q&A and troubleshooting for {query}", "url": f"https://forum.example.com/{query.lower().replace(' ', '-')}"}
+            ],
+            "source": "mock_fallback"
+        }
+
+
+async def _handle_news_search(request: ToolRequest) -> Dict[str, Any]:
+    """Real-time news search using NewsAPI (requires NEWS_API_KEY in settings)."""
+    from app.core.config import settings
+    query = request.parameters.get("query", request.query).strip()
+    max_results = int(request.parameters.get("max_results", 10))
+    language = request.parameters.get("language", "en")
+    logger.info("Executing News Search tool for query: '%s'", query)
+
+    api_key = getattr(settings.tools, "news_api_key", "") if hasattr(settings, "tools") else ""
+    if not api_key:
+        logger.warning("NEWS_API_KEY not configured. Returning mock news.")
+        return _mock_news_results(query, max_results)
+
+    try:
+        url = "https://newsapi.org/v2/everything"
+        params = {
+            "q": query,
+            "apiKey": api_key,
+            "language": language,
+            "pageSize": max_results,
+            "sortBy": "publishedAt"
+        }
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+
+        articles = []
+        for article in data.get("articles", [])[:max_results]:
+            if article.get("title") and article.get("description"):
+                articles.append({
+                    "title": article["title"],
+                    "description": article["description"],
+                    "url": article["url"],
+                    "source": article["source"]["name"],
+                    "published_at": article["publishedAt"],
+                    "image_url": article.get("urlToImage")
+                })
+
+        logger.info("News search returned %d articles for query: '%s'", len(articles), query)
+        return {"query": query, "articles_count": len(articles), "articles": articles, "source": "newsapi"}
+    except Exception as e:
+        logger.warning("News API call failed for '%s': %s. Falling back to mock.", query, e)
+        return _mock_news_results(query, max_results)
+
+
+def _mock_news_results(query: str, max_results: int) -> Dict[str, Any]:
+    """Mock news results for fallback."""
+    return {
+        "query": query,
+        "articles_count": 3,
+        "articles": [
+            {
+                "title": f"Breaking: Latest developments in {query}",
+                "description": f"Recent updates and analysis on {query}...",
+                "url": f"https://news.example.com/{query.lower().replace(' ', '-')}",
+                "source": "Tech News",
+                "published_at": "2024-01-15T10:30:00Z",
+                "image_url": None
+            },
+            {
+                "title": f"Analysis: What {query} means for the industry",
+                "description": f"Expert commentary on recent {query} developments...",
+                "url": f"https://analysis.example.com/{query.lower().replace(' ', '-')}",
+                "source": "Industry Weekly",
+                "published_at": "2024-01-14T15:45:00Z",
+                "image_url": None
+            },
+            {
+                "title": f"Community reaction to {query} announcement",
+                "description": f"Developers and users share thoughts on {query}...",
+                "url": f"https://forum.example.com/{query.lower().replace(' ', '-')}",
+                "source": "Dev Community",
+                "published_at": "2024-01-13T09:20:00Z",
+                "image_url": None
+            }
+        ][:max_results]
+    }
+
+
 # ---------------------------------------------------------------------------
 # Tool Registry Class
 # ---------------------------------------------------------------------------
@@ -370,6 +545,30 @@ class ToolRegistry:
                 handler=_handle_translation,
                 input_schema={"type": "object", "properties": {"text": {"type": "string"}, "target_language": {"type": "string"}}},
                 output_schema={"type": "object", "properties": {"translated_text": {"type": "string"}}}
+            ),
+            ToolDefinition(
+                name="web_search",
+                description="Performs real-time web search to retrieve latest information, news, articles, and facts from the internet.",
+                category="search",
+                priority=1,
+                timeout=10.0,
+                allow_parallel=True,
+                cache_ttl_seconds=300,
+                handler=_handle_web_search,
+                input_schema={"type": "object", "properties": {"query": {"type": "string"}, "max_results": {"type": "integer", "default": 5}}},
+                output_schema={"type": "object", "properties": {"results": {"type": "array"}}}
+            ),
+            ToolDefinition(
+                name="news_search",
+                description="Fetches latest news articles from major news sources worldwide using NewsAPI.",
+                category="search",
+                priority=1,
+                timeout=10.0,
+                allow_parallel=True,
+                cache_ttl_seconds=600,
+                handler=_handle_news_search,
+                input_schema={"type": "object", "properties": {"query": {"type": "string"}, "max_results": {"type": "integer", "default": 10}, "language": {"type": "string", "default": "en"}}},
+                output_schema={"type": "object", "properties": {"articles": {"type": "array"}}}
             ),
         ]
         for t in v1_tools:

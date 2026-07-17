@@ -205,13 +205,17 @@ class Neo4jConfig(BaseModel):
     """Neo4j graph database settings."""
     uri: str = f"bolt://localhost:{DEFAULT_NEO4J_PORT}"
     user: str = "neo4j"
+    username: str = "neo4j"
     password: str = Field(default="password", exclude=True)  # Never serialized
     database: str = "neo4j"
     max_connection_pool_size: int = 50
 
-    @property
-    def username(self) -> str:
-        return self.user
+    @model_validator(mode="after")
+    def sync_username(self) -> "Neo4jConfig":
+        """Ensure `username` always mirrors `user` for backward compatibility."""
+        if not self.username:
+            self.username = self.user
+        return self
 
 
 class StorageConfig(BaseModel):
@@ -328,6 +332,7 @@ class Settings(BaseSettings):
 
     NEO4J_URI: str = f"bolt://localhost:{DEFAULT_NEO4J_PORT}"
     NEO4J_USER: str = "neo4j"
+    NEO4J_USERNAME: str = "neo4j"
     NEO4J_PASSWORD: str = "password"
     NEO4J_DATABASE: str = "neo4j"
 
@@ -451,6 +456,7 @@ class Settings(BaseSettings):
         graph_cfg = Neo4jConfig(
             uri=self.NEO4J_URI,
             user=self.NEO4J_USER,
+            username=self.NEO4J_USERNAME or self.NEO4J_USER,
             password=self.NEO4J_PASSWORD,
             database=self.NEO4J_DATABASE,
         )

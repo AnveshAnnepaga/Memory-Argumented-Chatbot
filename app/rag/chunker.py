@@ -1,5 +1,6 @@
 # File: app/rag/chunker.py
 import logging
+import re
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid5, NAMESPACE_URL
 from app.domain.knowledge import Document
@@ -82,47 +83,102 @@ class SemanticRecursiveChunker:
 
     def _split_text_recursive(self, text: str, max_length: int, overlap: int) -> List[str]:
         """
-        Recursively splits text on semantic separators (`\\n\\n`, `\\n`, `. `, ` `) up to max_length words.
+        Recursively splits text on semantic separators (`## headers`, `\\n\\n`, `\\n`, `. `).
+        Preserves code blocks intact, respects markdown headings as chunk boundaries.
         """
         words = text.split()
         if len(words) <= max_length:
             return [text.strip()] if text.strip() else []
 
-        # Split by paragraph first if possible
-        paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
         chunks: List[str] = []
-        current_chunk_words: List[str] = []
-
-        for para in paragraphs:
-            para_words = para.split()
-            if len(current_chunk_words) + len(para_words) <= max_length:
-                current_chunk_words.extend(para_words)
-            else:
-                if current_chunk_words:
-                    chunks.append(" ".join(current_chunk_words))
-                    # Handle overlap
-                    overlap_words = current_chunk_words[-overlap:] if overlap > 0 else []
-                    current_chunk_words = overlap_words + para_words
+        # Phase 1: Try splitting on markdown headings first (strongest semantic boundary)
+        heading_split = re.split(r'(?=^#{1,4}\s)', text, flags=re.MULTILINE)
+        if len(heading_split) > 1:
+            for section in heading_split:
+                section = section.strip()
+                if not section:
+                    continue
+                section_words = section.split()
+                if len(section_words) <= max_length:
+                    chunks.append(section)
                 else:
-                    # Paragraph itself exceeds max_length, split sentences/words sliding window
-                    step = max(1, max_length - overlap)
-                    for i in range(0, len(para_words), step):
-                        slice_words = para_words[i : i + max_length]
-                        if slice_words:
-                            chunks.append(" ".join(slice_words))
-                    current_chunk_words = []
+                    # Phase 2: Split by code blocks (preserve them intact)
+                    chunks.extend(self._split_by_code_blocks(section, max_length, overlap))
+        else:
+            chunks.extend(self._split_by_code_blocks(text, max_length, overlap))
 
-        if current_chunk_words:
-            chunks.append(" ".join(current_chunk_words))
-
-        # Deduplicate identical chunks caused by overlap
-        cleaned_chunks: List[str] = []
+        # Phase 3: Deduplicate identical chunks caused by overlap
+        cleaned: List[str] = []
         for c in chunks:
             c_str = c.strip()
-            if c_str and (not cleaned_chunks or cleaned_chunks[-1] != c_str):
-                cleaned_chunks.append(c_str)
+            if c_str and (not cleaned or cleaned[-1] != c_str):
+                cleaned.append(c_str)
+        return cleaned
 
-        return cleaned_chunks
+    def _split_by_code_blocks(self, text: str, max_length: int, overlap: int) -> List[str]:
+        """Split text while preserving code blocks (```...```) as atomic units."""
+        parts = re.split(r'(```[\s\S]*?```)', text)
+        chunks: List[str] = []
+        current: List[str] = []
+
+        def _flush():
+            nonlocal current
+            if current:
+                chunk = "\n\n".join(current).strip()
+                if chunk:
+                    chunks.append(chunk)
+                current = []
+
+        for part in parts:
+            if not part.strip():
+                continue
+            if part.startswith("```") and part.endswith("```"):
+                # Code block is atomic — if it fits in current chunk, add it
+                if sum(len(t.split()) for t in current) + len(part.split()) <= max_length:
+                    current.append(part)
+                else:
+                    _flush()
+                    if len(part.split()) <= max_length:
+                        current.append(part)
+                    else:
+                        # Code block too large for a single chunk — still keep it whole
+                        chunks.append(part.strip())
+            else:
+                # Regular text — split by paragraphs
+                paragraphs = [p.strip() for p in re.split(r'\n\s*\n', part) if p.strip()]
+                for para in paragraphs:
+                    para_words = para.split()
+                    cur_words = sum(len(t.split()) for t in current)
+                    if cur_words + len(para_words) <= max_length:
+                        current.append(para)
+                    else:
+                        _flush()
+                        if len(para_words) <= max_length:
+                            current.append(para)
+                        else:
+                            # Long paragraph — sentence-split
+                            sentences = re.split(r'(?<=[.!?])\s+', para)
+                            for sent in sentences:
+                                sent_words = sent.split()
+                                cur_w = sum(len(t.split()) for t in current)
+                                if cur_w + len(sent_words) <= max_length:
+                                    current.append(sent)
+                                else:
+                                    _flush()
+                                    current.append(sent)
+        _flush()
+
+        # Handle overlap between adjacent chunks
+        if overlap > 0 and len(chunks) > 1:
+            overlapped: List[str] = []
+            for i, ch in enumerate(chunks):
+                if i > 0:
+                    prev_words = chunks[i - 1].split()
+                    overlap_words = prev_words[-overlap:] if len(prev_words) > overlap else prev_words
+                    ch = " ".join(overlap_words) + " " + ch if overlap_words else ch
+                overlapped.append(ch.strip())
+            return overlapped
+        return chunks
 
 
 # Global singleton instance

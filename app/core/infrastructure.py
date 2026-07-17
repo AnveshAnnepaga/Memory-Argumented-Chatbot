@@ -79,17 +79,17 @@ class InfrastructureRegistry:
                 success = await asyncio.wait_for(service.initialize(), timeout=service_timeout)
                 results[name] = success
                 if success:
-                    logger.info(f" ✔ Infrastructure service '{name}' initialized successfully.")
+                    logger.info(f" [OK] Infrastructure service '{name}' initialized successfully.")
                 else:
-                    logger.warning(f" ⚠ Infrastructure service '{name}' initialized with warnings/stub mode.")
+                    logger.warning(f" [WARN] Infrastructure service '{name}' initialized with warnings/stub mode.")
             except asyncio.TimeoutError:
-                logger.warning(f" ⌛ Infrastructure service '{name}' connection timed out (>{service_timeout}s). Entering offline/stub mode.")
+                logger.warning(f" [TIMEOUT] Infrastructure service '{name}' connection timed out (>{service_timeout}s). Entering offline/stub mode.")
                 service._is_initialized = True
                 if hasattr(service, "stub_mode"):
                     service.stub_mode = True
                 results[name] = False
             except Exception as exc:
-                logger.error(f" ✖ Infrastructure service '{name}' initialization FAILED: {exc}")
+                logger.error(f" [FAIL] Infrastructure service '{name}' initialization FAILED: {exc}")
                 results[name] = False
         logger.info("=== Completed initializing all registered infrastructure services ===")
         return results

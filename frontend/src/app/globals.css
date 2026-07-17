@@ -7,7 +7,7 @@
   --glass-border: rgba(132, 147, 150, 0.15);
 }
 
-@theme inline {
+@theme {
   --color-background: #0f1321;
   --color-on-background: #dfe1f6;
   --color-surface: #0f1321;
@@ -63,12 +63,6 @@
   --color-on-tertiary-fixed: #002113;
   --color-on-tertiary-fixed-variant: #005236;
 
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 40px;
-  --spacing-2xl: 64px;
   --spacing-unit: 4px;
   --spacing-margin-mobile: 16px;
   --spacing-gutter: 24px;
@@ -86,45 +80,108 @@
   --font-mono-code: "JetBrains Mono", monospace;
 }
 
+[data-theme="light"] {
+  --background: #f4f5fb;
+  --foreground: #1b1b2f;
+  --glass-surface: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.08);
+
+  --color-background: #f4f5fb;
+  --color-on-background: #1b1b2f;
+  --color-surface: #f4f5fb;
+  --color-surface-dim: #e0e1ec;
+  --color-surface-bright: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eeeff7;
+  --color-surface-container: #e8e9f2;
+  --color-surface-container-high: #e2e3ec;
+  --color-surface-container-highest: #dcdde6;
+  --color-on-surface: #1b1b2f;
+  --color-on-surface-variant: #424256;
+  --color-surface-variant: #e2e3ec;
+  --color-inverse-surface: #1b1b2f;
+  --color-inverse-on-surface: #ecedf8;
+  --color-outline: #73738a;
+  --color-outline-variant: #c4c4d8;
+  --color-surface-tint: #005d6a;
+
+  --color-primary: #005d6a;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #006d7d;
+  --color-on-primary-container: #c3f5ff;
+  --color-inverse-primary: #00daf3;
+
+  --color-secondary: #5c4898;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #785cc2;
+  --color-on-secondary-container: #eaddff;
+
+  --color-tertiary: #007a48;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #4bc790;
+  --color-on-tertiary-container: #002113;
+
+  --color-error: #b3261e;
+  --color-on-error: #ffffff;
+  --color-error-container: #8c0d0a;
+  --color-on-error-container: #ffdad6;
+
+  --color-primary-fixed: #9cf0ff;
+  --color-primary-fixed-dim: #00daf3;
+  --color-on-primary-fixed: #001f24;
+  --color-on-primary-fixed-variant: #004f58;
+
+  --color-secondary-fixed: #eaddff;
+  --color-secondary-fixed-dim: #d2bbff;
+  --color-on-secondary-fixed: #25005a;
+  --color-on-secondary-fixed-variant: #5a00c6;
+
+  --color-tertiary-fixed: #6ffbbe;
+  --color-tertiary-fixed-dim: #4edea3;
+  --color-on-tertiary-fixed: #002113;
+  --color-on-tertiary-fixed-variant: #005236;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Glassmorphism & custom classes from Stitch Antigravity AI UI */
+/* Glassmorphism & custom classes */
 .glass-surface {
-  background: rgba(15, 19, 33, 0.6);
+  background: var(--glass-surface, rgba(15, 19, 33, 0.6));
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(132, 147, 150, 0.1);
+  border: 1px solid var(--glass-border, rgba(132, 147, 150, 0.1));
 }
 
 .glass-border {
-  border: 1px solid rgba(132, 147, 150, 0.15);
+  border: 1px solid var(--glass-border, rgba(132, 147, 150, 0.15));
 }
 
 .glass-card {
-  background: rgba(23, 27, 42, 0.6);
+  background: var(--color-surface-container-low, #171b2a);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(132, 147, 150, 0.15);
+  border: 1px solid var(--color-outline-variant, #3b494c);
   transition: all 0.3s ease;
 }
 
 .glass-card:hover {
-  border-color: rgba(0, 218, 243, 0.4);
-  background: rgba(23, 27, 42, 0.8);
-  box-shadow: 0 0 30px rgba(0, 218, 243, 0.05);
+  border-color: var(--color-primary, #00daf3);
+  background: var(--color-surface-container, #1b1f2e);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--color-primary, #00daf3) 5%, transparent);
 }
 
 .aurora-glow {
   background: 
-    radial-gradient(circle at 50% -10%, rgba(0, 229, 255, 0.08), transparent 60%),
-    radial-gradient(circle at 0% 100%, rgba(96, 1, 209, 0.05), transparent 40%),
-    #0f1321;
+    radial-gradient(circle at 50% -10%, color-mix(in srgb, var(--color-primary-container, #00e5ff) 8%, transparent), transparent 60%),
+    radial-gradient(circle at 0% 100%, color-mix(in srgb, var(--color-secondary-container, #6001d1) 5%, transparent), transparent 40%),
+    var(--color-background, #0f1321);
 }
 
 .text-glow {

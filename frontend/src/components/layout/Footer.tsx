@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Terminal, Heart, GitBranch, ShieldAlert } from 'lucide-react';
+import { Terminal, Heart, GitBranch } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -9,10 +9,10 @@ export function Footer() {
       <div className="flex items-center space-x-3">
         <span className="flex items-center text-cyan-400">
           <Terminal className="w-3.5 h-3.5 mr-1" />
-          Antigravity Engine
+          Vyron Engine
         </span>
         <span className="text-slate-600">|</span>
-        <span className="text-slate-400">Milestone 15 — Productization & Production Deployment</span>
+        <span className="text-slate-400">Production Platform & Intelligence Engine</span>
       </div>
 
       <div className="flex items-center space-x-4 hidden md:flex">

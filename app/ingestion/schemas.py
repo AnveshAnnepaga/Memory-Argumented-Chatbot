@@ -48,6 +48,9 @@ class KnowledgeSourceSchema(BaseModel):
     allowed_paths: List[str] = Field(default_factory=list, description="Allowed URL path prefixes/regex")
     excluded_paths: List[str] = Field(default_factory=list, description="Excluded URL path prefixes/regex")
     crawl_frequency_hours: int = Field(default=24, ge=1)
+    max_pages: int = Field(default=30, ge=1, description="Max pages to crawl per run")
+    max_depth: int = Field(default=2, ge=1, description="Max BFS crawl depth")
+    use_sitemap: bool = Field(default=True, description="Attempt sitemap.xml discovery first")
     status: CrawlStatus = Field(default=CrawlStatus.PENDING)
 
 

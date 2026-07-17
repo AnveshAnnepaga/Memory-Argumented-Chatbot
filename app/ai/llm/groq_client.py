@@ -122,6 +122,19 @@ class GroqProvider(BaseLLMProvider):
             )
             choice = response.choices[0] if response.choices else None
             content = choice.message.content if choice and choice.message else ""
+            tool_calls = None
+            if choice and choice.message and getattr(choice.message, "tool_calls", None):
+                tool_calls = [
+                    {
+                        "id": tc.id,
+                        "type": tc.type,
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        }
+                    }
+                    for tc in choice.message.tool_calls
+                ]
             usage = (
                 response.usage.model_dump() if hasattr(response, "usage") and hasattr(response.usage, "model_dump")
                 else dict(response.usage) if hasattr(response, "usage") and response.usage else {}
@@ -130,6 +143,7 @@ class GroqProvider(BaseLLMProvider):
                 "content": content,
                 "model": response.model,
                 "usage": usage,
+                "tool_calls": tool_calls,
                 "raw": response,
             }
         except Exception as primary_exc:
@@ -150,6 +164,19 @@ class GroqProvider(BaseLLMProvider):
                     )
                     choice = response.choices[0] if response.choices else None
                     content = choice.message.content if choice and choice.message else ""
+                    tool_calls_fb = None
+                    if choice and choice.message and getattr(choice.message, "tool_calls", None):
+                        tool_calls_fb = [
+                            {
+                                "id": tc.id,
+                                "type": tc.type,
+                                "function": {
+                                    "name": tc.function.name,
+                                    "arguments": tc.function.arguments,
+                                }
+                            }
+                            for tc in choice.message.tool_calls
+                        ]
                     usage = (
                         response.usage.model_dump() if hasattr(response, "usage") and hasattr(response.usage, "model_dump")
                         else dict(response.usage) if hasattr(response, "usage") and response.usage else {}
@@ -158,6 +185,7 @@ class GroqProvider(BaseLLMProvider):
                         "content": content,
                         "model": response.model,
                         "usage": usage,
+                        "tool_calls": tool_calls_fb,
                         "fallback_triggered": True,
                         "raw": response,
                     }

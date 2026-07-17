@@ -47,13 +47,15 @@ class MockLLMProvider(BaseLLMProvider):
             else str(messages)
         ).strip()
         
-        q_lower = prompt_text.lower()
-        if any(w in q_lower for w in ["hello", "hi", "hey", "greetings", "good morning", "good evening"]):
+        import re
+        q_lower = prompt_text.lower().strip()
+        greetings = [r"\bhello\b", r"\bhi\b", r"\bhey\b", r"\bgreetings\b", r"\bgood morning\b", r"\bgood evening\b"]
+        if any(re.search(pat, q_lower) for pat in greetings) and len(q_lower.split()) <= 4:
             simulated_response = "Hello! I'm ready to assist you. What can we explore or solve together today?"
-        elif any(w in q_lower for w in ["who are you", "what are you"]):
-            simulated_response = "I am Antigravity, an intelligent AI coding and reasoning assistant created by Anvesh Mishra. How can I help you today?"
+        elif any(re.search(r"\b(who are you|what are you)\b", q_lower) for _ in [0]):
+            simulated_response = "I am Vyron AI, an intelligent AI coding and reasoning assistant created by Anvesh Mishra. How can I help you today?"
         else:
-            simulated_response = f"I have analyzed your query: '{prompt_text}'. Based on our current context, I'm ready to provide detailed insights, code generation, or multi-hop reasoning as needed. What specific aspect would you like to dive into next?"
+            simulated_response = f"I have analyzed your query: '{prompt_text}'. Based on our current context, here are the key architectural details:\n\n* **Overview**: Directly orchestrating workflows across nodes.\n* **Key Mechanism**: Graph-based multi-step reasoning with state persistence.\n* **Integration**: Connected to hybrid vector search and memory management."
 
         return {
             "content": simulated_response,

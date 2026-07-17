@@ -32,20 +32,29 @@ logger = logging.getLogger("app.orchestration.workflow")
 def route_decision(state: WorkflowState) -> str:
     """
     (`Conditional Routing Function from Router Node / Tool Execution Node`)
-    Inspects `router_decision` along with memory/tool results in state and directs execution:
-    - DIRECT_LLM -> context_merge_node if memory or tools retrieved data, else prompt_builder_node
-    - HYBRID_RAG -> rag_retrieval_node
-    - GRAPH_RAG -> graph_retrieval_node
-    - HYBRID_SYNTHESIS -> rag_retrieval_node (which then connects to graph_retrieval_node)
+    Inspects `router_decision` along with memory/tool results in state and directs execution.
+    - MEMORY_ENHANCED / DIRECT_LLM / TOOLS_ENHANCED -> prompt_builder if no RAG/Graph required,
+      else context_merge first (to honor all retrievals).
+    - GRAPH_RAG -> graph_retrieval
+    - HYBRID_RAG / HYBRID_SYNTHESIS -> rag_retrieval
     """
     decision = state.get("router_decision")
     route_str = decision.get("route", RouteType.DIRECT_LLM.value) if decision else RouteType.DIRECT_LLM.value
 
-    if route_str == RouteType.DIRECT_LLM.value:
+    if route_str in (RouteType.DIRECT_LLM.value, RouteType.MEMORY_ENHANCED.value,
+                     RouteType.TOOLS_ENHANCED.value):
         mem_ctx = state.get("retrieved_memory_context", "").strip()
         tool_ctx = state.get("retrieved_tool_context", "").strip()
+        rag_ctx = state.get("retrieved_rag_context", "").strip()
+        graph_ctx = state.get("retrieved_graph_context", "").strip()
+
         has_mem = mem_ctx and mem_ctx not in ("[Long-Term Memory Engine Offline: Using default context]", "")
         has_tool = tool_ctx and tool_ctx not in ("[Tool System Offline: Execution failed]", "")
+        # ALSO pull richer context if mixed reasoning upgraded routes
+        decision_outer = state.get("router_decision", {}) or {}
+        if decision_outer.get("requires_rag") or decision_outer.get("requires_graph"):
+            return "rag_retrieval"
+
         if has_mem or has_tool:
             return "context_merge"
         return "prompt_builder"
@@ -53,7 +62,7 @@ def route_decision(state: WorkflowState) -> str:
         return "graph_retrieval"
     elif route_str in (RouteType.HYBRID_RAG.value, RouteType.HYBRID_SYNTHESIS.value):
         return "rag_retrieval"
-    
+
     return "prompt_builder"
 
 

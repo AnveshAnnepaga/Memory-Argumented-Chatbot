@@ -56,17 +56,18 @@ class ToolPipeline:
         """
         Formats normalized tool responses into a structured Markdown block
         suitable for direct injection into the LangGraph final_context.
+
+        Output is intentionally minimal: it only carries the tool's data payload
+        (e.g. weather fields, calculator result). No headers like
+        "REAL-TIME EXTERNAL TOOL INTELLIGENCE", no Exec Time, no Cached flag,
+        no status string - because those would otherwise leak into the user-facing
+        answer and force the LLM to mention "based on a tool".
         """
         if not responses:
             return ""
 
-        lines = ["=== REAL-TIME EXTERNAL TOOL INTELLIGENCE ==="]
-        for idx, resp in enumerate(responses, 1):
-            status_str = "SUCCESS" if resp.success else "FAILED"
-            lines.append(
-                f"[{idx}] Tool: '{resp.tool_name}' | Status: {status_str} | "
-                f"Exec Time: {resp.execution_time_ms}ms | Cached: {resp.cached}"
-            )
+        lines: List[str] = []
+        for resp in responses:
             if resp.success and resp.data is not None:
                 if isinstance(resp.data, (dict, list)):
                     try:
@@ -75,12 +76,11 @@ class ToolPipeline:
                         data_str = str(resp.data)
                 else:
                     data_str = str(resp.data)
-                lines.append(f"Result:\n{data_str}")
+                lines.append(data_str)
             elif resp.error:
-                lines.append(f"Error: {resp.error}")
-            lines.append("")  # Empty line separator
+                lines.append(f"Tool error: {resp.error}")
 
-        return "\n".join(lines).strip()
+        return "\n\n".join(lines).strip()
 
 
 # Global singleton pipeline instance

@@ -145,6 +145,7 @@ class RAGPipeline:
         max_tokens: int = 3000,
         namespace: Optional[str] = None,
         filter: Optional[Dict[str, Any]] = None,
+        similarity_threshold: Optional[float] = None,
     ) -> RAGContext:
         """
         Runs the complete Hybrid Retrieval and Context Assembly pipeline ready for LangGraph:
@@ -153,6 +154,17 @@ class RAGPipeline:
         """
         logger.info(f"Executing RAG retrieval pipeline for query: '{query[:40]}...'")
 
+        # Apply configured similarity threshold by default.
+        if similarity_threshold is None:
+            try:
+                from app.core.config import settings
+                cfg_threshold = float(getattr(settings.retrieval, "similarity_threshold", 0.55))
+                similarity_threshold = min(cfg_threshold, 0.55) if cfg_threshold < 0.55 else (
+                    0.55 if cfg_threshold > 0.7 else cfg_threshold
+                )
+            except Exception:
+                similarity_threshold = 0.55
+
         # Step 1: Hybrid Retrieval + Fusion Engine + Cross-Encoder Reranker
         top_chunks = self.retriever.retrieve(
             query=query,
@@ -160,6 +172,7 @@ class RAGPipeline:
             candidate_pool_size=candidate_pool_size,
             namespace=namespace,
             filter=filter,
+            similarity_threshold=similarity_threshold,
         )
 
         # Step 2: Context Assembly & Token Budgeting

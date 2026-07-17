@@ -74,6 +74,7 @@ from app.repositories import (
     EvaluationRepository,
     ConfigurationRepository,
     DocumentRepository,
+    DocumentFileRepository,
     ConversationRepository,
     MessageRepository,
     MemorySnapshotRepository,
@@ -116,6 +117,11 @@ def get_configuration_repository(session: Optional[AsyncSession] = Depends(get_p
 def get_document_repository(session: Optional[AsyncSession] = Depends(get_postgres_session)) -> DocumentRepository:
     """Returns PostgreSQL DocumentRepository (`Milestone 8 Knowledge Repository`)."""
     return DocumentRepository(session=session)
+
+
+def get_document_file_repository(session: Optional[AsyncSession] = Depends(get_postgres_session)) -> DocumentFileRepository:
+    """Returns PostgreSQL DocumentFileRepository for uploaded file BLOBs."""
+    return DocumentFileRepository(session=session)
 
 
 def get_conversation_repository(db: Optional[AsyncIOMotorDatabase] = Depends(get_mongo_db)) -> ConversationRepository:

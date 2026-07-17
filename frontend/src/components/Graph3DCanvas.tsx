@@ -59,11 +59,13 @@ export default function Graph3DCanvas({
   selectedNodeId,
 }: Graph3DCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isAutoRotate, setIsAutoRotate] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<Node3D | null>(null);
 
   // Rotation angles in 3D space
-  const rotRef = useRef({ yaw: 0.4, pitch: 0.3, autoRotate: true });
+  const rotRef = useRef({ yaw: 0.4, pitch: 0.3 });
   const dragRef = useRef({ isDragging: false, startX: 0, startY: 0, lastYaw: 0, lastPitch: 0 });
 
   useEffect(() => {
@@ -91,7 +93,7 @@ export default function Graph3DCanvas({
       const centerY = canvas.height / 2;
 
       // Auto-rotate gently if not dragging
-      if (rotRef.current.autoRotate && !dragRef.current.isDragging) {
+      if (isAutoRotate && !dragRef.current.isDragging) {
         rotRef.current.yaw += 0.003;
       }
 
@@ -222,9 +224,10 @@ export default function Graph3DCanvas({
       window.removeEventListener("resize", resizeCanvas);
       cancelAnimationFrame(animationId);
     };
-  }, [initialNodes, initialLinks, selectedNodeId, hoveredNode]);
+  }, [initialNodes, initialLinks, selectedNodeId, hoveredNode, isAutoRotate]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDragging(true);
     dragRef.current = {
       isDragging: true,
       startX: e.clientX,
@@ -284,6 +287,7 @@ export default function Graph3DCanvas({
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const wasDragging = dragRef.current.isDragging;
     dragRef.current.isDragging = false;
+    setIsDragging(false);
 
     // If mouse didn't move much, treat as click on node
     if (wasDragging && Math.hypot(e.clientX - dragRef.current.startX, e.clientY - dragRef.current.startY) < 5) {
@@ -300,8 +304,13 @@ export default function Graph3DCanvas({
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onMouseLeave={() => {
+          dragRef.current.isDragging = false;
+          setIsDragging(false);
+          setIsHovering(false);
+        }}
         className={`w-full h-full transition-cursor ${
-          dragRef.current.isDragging
+          isDragging
             ? "cursor-grabbing"
             : isHovering
             ? "cursor-pointer"
@@ -312,12 +321,10 @@ export default function Graph3DCanvas({
         <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
         3D Engine Active &bull; Drag to Rotate &bull; Click Node to Inspect
         <button
-          onClick={() => {
-            rotRef.current.autoRotate = !rotRef.current.autoRotate;
-          }}
+          onClick={() => setIsAutoRotate((prev) => !prev)}
           className="ml-2 px-2 py-0.5 bg-primary/20 hover:bg-primary/30 text-primary font-bold rounded transition-colors"
         >
-          {rotRef.current.autoRotate ? "Pause Orbit" : "Auto Orbit"}
+          {isAutoRotate ? "Pause Orbit" : "Auto Orbit"}
         </button>
       </div>
     </div>

@@ -1,16 +1,21 @@
 # File: app/rag/embedder.py
 import hashlib
 import logging
+import os
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 from app.rag.schemas import ChunkSchema, EmbeddingVector
 
 logger = logging.getLogger("rag.embedder")
 
+# Avoid importing TensorFlow via transformers during test collection.
+os.environ.setdefault("TRANSFORMERS_NO_TF", "1")
+
 try:
     from sentence_transformers import SentenceTransformer
     _ST_AVAILABLE = True
-except ImportError:
+except Exception as exc:
+    logger.warning(f"sentence_transformers unavailable; using stub embeddings instead ({exc}).")
     _ST_AVAILABLE = False
 
 

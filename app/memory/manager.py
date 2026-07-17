@@ -2,7 +2,9 @@
 """
 (`Milestone 12 Long-Term Memory Manager`)
 Central CRUD, conflict resolution, ranking scoring, and storage dispatch layer.
-Routes memories to MongoDB (Conversation/Episodic/Summary), PostgreSQL (Profile), and Pinecone (Semantic).
+Routes memories to MongoDB (Conversation/Episodic/Summary via ConversationRepository),
+PostgreSQL (Profile via UserProfileRepository), Pinecone (Semantic embeddings),
+and Neo4j (Knowledge Graph relationships).
 """
 import logging
 import math
@@ -12,7 +14,11 @@ from typing import Any, Dict, List, Optional
 from app.database.mongodb import mongo_manager
 from app.database.postgres import postgres_manager
 from app.database.pinecone import pinecone_manager
+from app.database.neo4j import neo4j_manager
 from app.rag.embedder import embedder
+from app.repositories.mongodb.conversation_repository import ConversationRepository
+from app.repositories.postgres.profile_repository import UserProfileRepository
+from app.domain.conversation import Conversation, Message
 from app.memory.schemas import (
     ConversationMemory,
     Episode,
@@ -20,7 +26,7 @@ from app.memory.schemas import (
     MemoryExtractionItem,
     MemoryType,
     SemanticMemory,
-    UserProfile,
+    UserProfile as MemoryUserProfile,
     _utcnow,
 )
 
@@ -30,15 +36,17 @@ logger = logging.getLogger("app.memory.manager")
 class MemoryManager:
     """
     (`3. Memory Manager CRUD & Scoring Layer`)
-    Coordinates memory persistence across NoSQL, SQL, and Vector storage engines.
+    Coordinates memory persistence across NoSQL, SQL, Vector, and Graph storage engines.
     Maintains memory importance, freshness (recency), confidence scores, and access statistics.
     """
 
     def __init__(self):
-        # High-performance local in-memory storage fallback for offline/test stub environments
+        # Repository-backed persistence with in-memory fallback
+        self.conversation_repo = ConversationRepository()
+        self.profile_repo = UserProfileRepository()
         self._local_mongo_episodes: Dict[str, Episode] = {}
         self._local_mongo_conversations: Dict[str, ConversationMemory] = {}
-        self._local_postgres_profiles: Dict[str, UserProfile] = {}
+        self._local_postgres_profiles: Dict[str, MemoryUserProfile] = {}
         self._local_pinecone_semantics: Dict[str, SemanticMemory] = {}
 
     @property
@@ -94,9 +102,9 @@ class MemoryManager:
             logger.warning(f"Unsupported memory type '{item.memory_type}' for creation.")
             return None
 
-    async def _store_profile_attribute(self, user_id: str, item: MemoryExtractionItem) -> UserProfile:
-        """Stores or updates structured profile attribute in PostgreSQL (`UserProfile`)."""
-        profile = self._local_postgres_profiles.get(user_id) or UserProfile(user_id=user_id)
+    async def _store_profile_attribute(self, user_id: str, item: MemoryExtractionItem) -> MemoryUserProfile:
+        """Stores or updates structured profile attribute in PostgreSQL via UserProfileRepository."""
+        profile = self._local_postgres_profiles.get(user_id) or MemoryUserProfile(user_id=user_id)
         key = item.key or "occupation"
         val = item.value or item.content
 
@@ -115,13 +123,34 @@ class MemoryManager:
         profile.access_count += 1
         self._local_postgres_profiles[user_id] = profile
 
-        # Attempt live PostgreSQL write if online
+        # Persist to PostgreSQL via UserProfileRepository
         try:
-            if not postgres_manager.stub_mode and postgres_manager.pool:
-                # In production SQL table schema sync could run here
-                pass
+            from app.domain.user import UserProfile as DomainUserProfile
+            domain_profile = DomainUserProfile(
+                user_id=user_id,
+                full_name=profile.name or profile.full_name,
+                preferences={
+                    "name": profile.name,
+                    "occupation": profile.occupation,
+                    "preferred_language": profile.preferred_language,
+                    "timezone": profile.timezone,
+                    "interests": profile.interests,
+                    "projects": profile.projects,
+                },
+            )
+            async for session in postgres_manager.get_session():
+                if session is not None:
+                    existing = await self.profile_repo.retrieve(user_id, session=session)
+                    if existing:
+                        await self.profile_repo.update(user_id, {
+                            "full_name": domain_profile.full_name,
+                            "preferences": domain_profile.preferences,
+                        }, session=session)
+                    else:
+                        await self.profile_repo.create(domain_profile, session=session)
+                break
         except Exception as exc:
-            logger.debug(f"PostgreSQL live sync skipped ({exc}). Using in-memory profile store.")
+            logger.debug(f"UserProfileRepository live sync skipped ({exc}). Using in-memory profile store.")
 
         logger.info(f"Updated UserProfile for user '{user_id}': {key} -> {val}")
         return profile
@@ -129,7 +158,7 @@ class MemoryManager:
     async def _store_semantic_memory(
         self, mem_id: str, user_id: str, item: MemoryExtractionItem, now: datetime
     ) -> SemanticMemory:
-        """Stores permanent user fact embedded in Pinecone (`SemanticMemory`)."""
+        """Stores permanent user fact embedded in Pinecone and Neo4j relationship."""
         category = item.key if item.key and item.key in ("preferred_language", "occupation", "stack", "skill") else "preference"
         sem = SemanticMemory(
             id=mem_id,
@@ -169,8 +198,53 @@ class MemoryManager:
         except Exception as exc:
             logger.debug(f"Pinecone live vector upsert skipped ({exc}). Using in-memory semantic store.")
 
+        # Store relationship in Neo4j Knowledge Graph
+        try:
+            driver = neo4j_manager.get_client()
+            if driver is not None:
+                async with driver.session() as neo4j_session:
+                    fact_text = sem.fact
+                    concept = self._extract_concept_from_fact(fact_text, category, item.value)
+                    await neo4j_session.run(
+                        """
+                        MERGE (u:User {id: $user_id})
+                        MERGE (c:Concept {name: $concept, category: $category})
+                        MERGE (u)-[r:KNOWS {fact_id: $fact_id}]->(c)
+                        SET r.confidence = $confidence,
+                            r.importance = $importance,
+                            r.fact = $fact,
+                            r.updated_at = datetime()
+                        """,
+                        user_id=user_id,
+                        concept=concept,
+                        category=category,
+                        fact_id=mem_id,
+                        confidence=sem.confidence,
+                        importance=sem.importance_score,
+                        fact=sem.fact,
+                    )
+                    logger.info(f"Stored Neo4j relationship: User[{user_id}] -> Concept[{concept}]")
+        except Exception as exc:
+            logger.debug(f"Neo4j relationship storage skipped ({exc}).")
+
         logger.info(f"Created SemanticMemory [ID: {mem_id}] for user '{user_id}': {sem.fact}")
         return sem
+
+    def _extract_concept_from_fact(self, fact: str, category: str, val: Optional[str] = None) -> str:
+        """Extracts the main concept from a fact for Neo4j node naming."""
+        if val and val != "Project":
+            return val
+        prefixes = ["User prefers ", "User fact: ", "User ", "prefers "]
+        text = fact
+        for p in prefixes:
+            if text.startswith(p):
+                text = text[len(p):]
+                break
+        # Take first meaningful word pair
+        words = text.split()
+        if len(words) >= 2:
+            return " ".join(words[:2]).rstrip(".,!?")
+        return words[0].rstrip(".,!?") if words else fact[:20]
 
     async def _store_episodic_memory(
         self, mem_id: str, user_id: str, item: MemoryExtractionItem, now: datetime
@@ -204,12 +278,15 @@ class MemoryManager:
     async def _store_conversation_memory(
         self, mem_id: str, user_id: str, item: MemoryExtractionItem, now: datetime
     ) -> ConversationMemory:
-        """Stores short-term conversation turn in MongoDB (`ConversationMemory`)."""
+        """Stores conversation turn in MongoDB via ConversationRepository."""
+        conversation_id = item.key or f"sess-{user_id}"
+        role = "user" if item.value != "assistant" else "assistant"
+
         conv = ConversationMemory(
             id=mem_id,
-            conversation_id=item.key or f"sess-{user_id}",
+            conversation_id=conversation_id,
             user_id=user_id,
-            role="user" if item.value != "assistant" else "assistant",
+            role=role,
             content=item.content,
             timestamp=now,
             importance_score=item.importance_score,
@@ -217,12 +294,38 @@ class MemoryManager:
         )
         self._local_mongo_conversations[mem_id] = conv
 
+        # Persist to MongoDB via ConversationRepository + Message
         try:
-            coll = mongo_manager.get_collection("conversation_memories")
+            message = Message(
+                id=mem_id,
+                conversation_id=conversation_id,
+                role=role,
+                content=item.content,
+                created_at=now,
+            )
+            coll = mongo_manager.get_collection("messages")
             if coll is not None:
-                await coll.insert_one(conv.model_dump(mode="json"))
+                await coll.insert_one(message.model_dump(mode="json"))
+
+            # Ensure conversation document exists
+            conv_coll = mongo_manager.get_collection("conversations")
+            if conv_coll is not None:
+                existing = await conv_coll.find_one({"id": conversation_id})
+                if existing is None:
+                    conversation = Conversation(
+                        id=conversation_id,
+                        user_id=user_id,
+                        title=f"Conversation {conversation_id[:8]}",
+                    )
+                    await conv_coll.insert_one(conversation.model_dump(mode="json"))
+                else:
+                    await conv_coll.update_one(
+                        {"id": conversation_id},
+                        {"$set": {"updated_at": now, "last_active": now},
+                         "$inc": {"message_count": 1}},
+                    )
         except Exception as exc:
-            logger.debug(f"MongoDB live insert skipped ({exc}). Using local conversation store.")
+            logger.debug(f"MongoDB conversation storage skipped ({exc}). Using local store.")
 
         return conv
 

@@ -1,11 +1,20 @@
 # File: app/rag/retriever.py
 import logging
+import os
 from typing import Any, Dict, List, Optional, Tuple
 from app.rag.embedder import embedder
 from app.rag.schemas import ChunkSchema, RetrievedChunk
 from app.rag.vector_store import vector_store
 
+try:
+    from app.ai.llm.llm_manager import llm_manager
+    _LLM_AVAILABLE = True
+except Exception:
+    _LLM_AVAILABLE = False
+
 logger = logging.getLogger("rag.retriever")
+
+os.environ.setdefault("TRANSFORMERS_NO_TF", "1")
 
 try:
     from rank_bm25 import BM25Okapi
@@ -16,7 +25,8 @@ except ImportError:
 try:
     from sentence_transformers import CrossEncoder
     _CROSS_ENCODER_AVAILABLE = True
-except ImportError:
+except Exception as exc:
+    logger.warning(f"sentence_transformers CrossEncoder unavailable; using heuristic reranking ({exc}).")
     _CROSS_ENCODER_AVAILABLE = False
 
 
@@ -329,6 +339,7 @@ class HybridRetriever:
     (`9.4 Hybrid Retriever`)
     Orchestrates the complete Retrieval Pipeline without calling the LLM:
     User Query -> Query Embedding -> Dense + BM25 Search -> Retrieval Fusion Engine -> Cross-Encoder Reranker -> Top K.
+    Supports HyDE (Hypothetical Document Embeddings) for query expansion when LLM is available.
     """
 
     def __init__(
@@ -336,32 +347,77 @@ class HybridRetriever:
         sparse_retriever: Optional[BM25SparseRetriever] = None,
         fusion_engine: Optional[RetrievalFusionEngine] = None,
         reranker: Optional[CrossEncoderReranker] = None,
+        similarity_threshold: float = 0.55,
+        use_hyde: bool = False,
     ):
         self.sparse_retriever = sparse_retriever or BM25SparseRetriever()
         self.fusion_engine = fusion_engine or RetrievalFusionEngine()
         self.reranker = reranker or CrossEncoderReranker()
+        self.similarity_threshold = similarity_threshold
+        self.use_hyde = use_hyde
+
+    async def _expand_with_hyde(self, query: str) -> Tuple[str, str]:
+        """
+        HyDE: Generates a hypothetical document that answers the query,
+        then returns both the original query and the HyDE-expanded text for embedding.
+        The expanded query improves retrieval by matching the lexicon of relevant documents.
+        """
+        if not _LLM_AVAILABLE or not self.use_hyde:
+            return query, query
+        try:
+            hyde_prompt = (
+                "Write a detailed, factual passage that answers the following question. "
+                "Write in a neutral, informative style as if explaining to a colleague. "
+                "Include specific details, technical terms, and context.\n\n"
+                f"Question: {query}\n\nPassage:"
+            )
+            res = await llm_manager.generate(
+                messages=[{"role": "user", "content": hyde_prompt}],
+                temperature=0.3,
+                max_tokens=300,
+            )
+            hypo_doc = (res.get("content") or "").strip()
+            if hypo_doc and len(hypo_doc.split()) > 5:
+                logger.info(f"HyDE expanded query ({len(hypo_doc.split())} words)")
+                return query, hypo_doc
+        except Exception as e:
+            logger.debug(f"HyDE generation failed, falling back to raw query: {e}")
+        return query, query
 
     def index_chunks(self, chunks: List[ChunkSchema]) -> int:
         """Indexes chunks into the sparse BM25 index (dense indexing is handled via vector_store)."""
         return self.sparse_retriever.index_chunks(chunks)
 
-    def retrieve(
+    async def retrieve(
         self,
         query: str,
         top_k: int = 5,
         candidate_pool_size: int = 25,
         namespace: Optional[str] = None,
         filter: Optional[Dict[str, Any]] = None,
+        similarity_threshold: Optional[float] = None,
     ) -> List[RetrievedChunk]:
         """
         Executes hybrid retrieval and returns the top_k reranked chunks.
         Notice: Does NOT call the LLM!
+        Chunks whose final fused score is below `similarity_threshold`
+        are discarded, ensuring only relevant context reaches the prompt builder.
         """
         if not query.strip():
             return []
 
+        threshold = (
+            similarity_threshold
+            if similarity_threshold is not None
+            else self.similarity_threshold
+        )
+
+        # 0. HyDE Query Expansion (if enabled)
+        raw_query, hyde_doc = await self._expand_with_hyde(query)
+        dense_query_text = hyde_doc if hyde_doc != query else query
+
         # 1. Query Embedding & Dense Search (Pinecone / Local Vector Store)
-        query_vector = embedder.embed_text(query)
+        query_vector = embedder.embed_text(dense_query_text)
         dense_matches = vector_store.similarity_search(
             query_vector=query_vector,
             top_k=candidate_pool_size,
@@ -369,7 +425,7 @@ class HybridRetriever:
             namespace=namespace,
         )
 
-        # 2. Sparse BM25 Search
+        # 2. Sparse BM25 Search (always uses the original query)
         sparse_matches = self.sparse_retriever.search(query=query, top_k=candidate_pool_size)
 
         # 3. Retrieval Fusion Engine (Merge, deduplicate, normalize, RRF)
@@ -379,22 +435,54 @@ class HybridRetriever:
             candidate_pool_size=candidate_pool_size,
         )
 
-        # 4. Cross-Encoder Reranking
+        # Drop clearly irrelevant candidates BEFORE reranking.
+        filtered = [c for c in fused_candidates if c.score >= threshold]
+        if not filtered:
+            logger.info(
+                f"Hybrid retrieval: no chunks passed similarity_threshold={threshold:.2f} "
+                f"for query '{query[:30]}...'. Returning empty."
+            )
+            return []
+
+        # 4. Cross-Encoder Reranking (if any candidates survived)
         reranked_top_k = self.reranker.rerank(
             query=query,
-            candidates=fused_candidates,
-            top_k=top_k,
+            candidates=filtered,
+            top_k=min(top_k, len(filtered)),
         )
+
+        # 5. Final threshold-recheck after rerank (rerank score may be on a different scale).
+        final = [c for c in reranked_top_k if (c.rerank_score or c.score or 0) >= threshold]
+        if not final:
+            final = reranked_top_k  # rerank scores use raw logits; keep best.
 
         logger.info(
             f"Hybrid retrieval completed for query '{query[:30]}...'. "
-            f"[Dense: {len(dense_matches)} | Sparse: {len(sparse_matches)} | Fused: {len(fused_candidates)} -> Top K: {len(reranked_top_k)}]"
+            f"[Dense: {len(dense_matches)} | Sparse: {len(sparse_matches)} | "
+            f"Fused: {len(fused_candidates)} | AfterThreshold: {len(filtered)} -> Top K: {len(final)}]"
         )
-        return reranked_top_k
+        return final
 
 
 # Global singleton instances
 sparse_retriever = BM25SparseRetriever()
 fusion_engine = RetrievalFusionEngine()
 reranker = CrossEncoderReranker()
-hybrid_retriever = HybridRetriever(sparse_retriever=sparse_retriever, fusion_engine=fusion_engine, reranker=reranker)
+hybrid_retriever = HybridRetriever(
+    sparse_retriever=sparse_retriever,
+    fusion_engine=fusion_engine,
+    reranker=reranker,
+)
+
+# Apply configured similarity threshold from settings if available (covers offline/dev mode).
+try:
+    from app.core.config import settings  # noqa: E402
+    cfg_threshold = float(getattr(settings.retrieval, "similarity_threshold", 0.55))
+    # Use a more lenient effective threshold if user configured something > 0.7 (avoids empty retr).
+    # Lower the bar so a relevant-enough chunk still passes.
+    effective = min(cfg_threshold, 0.55) if cfg_threshold < 0.55 else 0.55
+    if cfg_threshold > 0.7:
+        effective = 0.55  # cap to keep retrieval useful
+    hybrid_retriever.similarity_threshold = effective
+except Exception:
+    hybrid_retriever.similarity_threshold = 0.55

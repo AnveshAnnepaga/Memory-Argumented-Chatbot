@@ -20,10 +20,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Antigravity AI | Enterprise AI Assistant & Production Studio",
-  description: "Breathtaking Enterprise AI Platform by Anvesh Mishra featuring LangGraph Orchestration, Hybrid RAG, GraphRAG, Long-Term Memory, and Evaluation Observability.",
-  keywords: ["FastAPI", "Next.js 15", "LangGraph", "GraphRAG", "Neo4j", "Pinecone", "Evaluation", "Observability", "Antigravity AI"],
-  authors: [{ name: "Anvesh Mishra", url: "https://github.com/anvesh4" }],
+  title: "Vyron AI | AI Assistant",
+  description: "Vyron AI — an intelligent assistant with memory, knowledge search, and real-time capabilities.",
 };
 
 export default function RootLayout({
@@ -32,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${interTight.variable} ${jetbrainsMono.variable} dark antialiased`}>
+    <html lang="en" className={`${inter.variable} ${interTight.variable} ${jetbrainsMono.variable} antialiased`}>
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"

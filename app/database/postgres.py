@@ -67,6 +67,13 @@ class PostgresManager(BaseInfrastructureManager):
                 expire_on_commit=False,
             )
             await self._ping_db()
+            try:
+                from app.repositories.postgres.user_repository import UserTable
+                async with self.engine.begin() as conn:
+                    await conn.run_sync(Base.metadata.create_all)
+                logger.info("PostgreSQL database tables verified/created via metadata.create_all.")
+            except Exception as table_exc:
+                logger.warning(f"Could not verify/create tables ({table_exc})")
             self._is_initialized = True
             self.stub_mode = False
             logger.info("PostgreSQL connection pool initialized and verified.")

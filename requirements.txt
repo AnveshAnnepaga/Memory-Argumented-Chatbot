@@ -4,6 +4,12 @@ uvicorn
 pydantic
 pydantic-settings
 python-dotenv
+python-multipart
+
+# Auth
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
 
 # AI
 langchain

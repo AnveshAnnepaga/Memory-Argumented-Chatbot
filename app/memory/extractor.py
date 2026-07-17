@@ -40,6 +40,51 @@ class MemoryExtractor:
                 0.90,
                 "Explicit user name declaration",
             ),
+            # Location / City from "from [city]" or "i am from [city]" or "i live in [city]"
+            (
+                re.compile(r"(?:i am from|i live in|i'm from|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", re.IGNORECASE),
+                MemoryType.PROFILE,
+                "location",
+                0.95,
+                0.85,
+                "User location declaration",
+            ),
+            # Education / Degree - "pursuing B.Tech in Data Science" or "studying B.Tech in Data Science" or "doing B.Tech in Data Science"
+            (
+                re.compile(r"(?:pursuing|studying|doing|enrolled in)\s+([A-Za-z0-9\.]+\s*(?:in|of)\s+[A-Za-z0-9\s&]+)", re.IGNORECASE),
+                MemoryType.PROFILE,
+                "education",
+                0.96,
+                0.90,
+                "User education/degree declaration",
+            ),
+            # CGPA - "cgpa of 8.76" or "cgpa is 8.76" or "cgpa 8.76"
+            (
+                re.compile(r"(?:cgpa|gpa)\s*(?:of|is|:)?\s*([0-9]\.[0-9]{1,2})", re.IGNORECASE),
+                MemoryType.PROFILE,
+                "cgpa",
+                0.97,
+                0.90,
+                "User CGPA declaration",
+            ),
+            # Field of study from "in Data Science" or "in Computer Science" - more flexible
+            (
+                re.compile(r"(?:in|majoring in|specializing in)\s+([A-Za-z0-9\s&]+(?:\s+Science|\s+Engineering|\s+Technology|\s+Mathematics|\s+Arts|\s+Commerce|\s+Business|\s+Management|\s+Analytics|\s+Data\s+Science|\s+AI|\s+ML|\s+Computer\s+Science))", re.IGNORECASE),
+                MemoryType.PROFILE,
+                "field_of_study",
+                0.93,
+                0.85,
+                "User field of study declaration",
+            ),
+            # College/University name - "at XYZ College" or "from XYZ University"
+            (
+                re.compile(r"(?:at|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+(?:College|University|Institute|Institute\s+of\s+Technology)))", re.IGNORECASE),
+                MemoryType.PROFILE,
+                "college",
+                0.92,
+                0.85,
+                "User college/university declaration",
+            ),
             # Preferred Language / Stack update or preference
             (
                 re.compile(r"(?:i prefer|my preferred language is|i love|i use)\s+([A-Za-z0-9_+#-]{2,30})", re.IGNORECASE),
@@ -100,8 +145,18 @@ class MemoryExtractor:
                 "Architecture/model configuration change event",
             ),
         ]
-        # Ignore list for high-speed rejection of conversational filler
-        self._ignore_exact = {"thank you", "thanks", "ok", "okay", "hello", "hi", "hey", "got it", "cool", "yes", "no", "good morning", "bye"}
+        # Classification-driven ignore list: transient noise that adds no enduring value
+        self._ignore_exact = {
+            "thank you", "thanks", "ok", "okay", "hello", "hi", "hey",
+            "got it", "cool", "yes", "no", "good morning", "bye", "nice",
+            "great", "awesome", "wow", "lol", "haha", "sure", "fine",
+        }
+        # Low-importance greetings patterns (classification: small talk / greeting -> IGNORE)
+        self._greeting_patterns = [
+            re.compile(r"\b(?:hello|hi|hey|greetings|good morning|good evening|good afternoon)\b", re.IGNORECASE),
+            re.compile(r"\b(?:how are you|how's it going|what's up|how do you do)\b", re.IGNORECASE),
+            re.compile(r"\b(?:nice to meet you|pleasure|pleased)\b", re.IGNORECASE),
+        ]
 
     async def extract(
         self,
@@ -121,6 +176,12 @@ class MemoryExtractor:
         if lower_q in self._ignore_exact or len(clean_q) < 3:
             logger.debug(f"Query '{clean_q}' recognized as transient conversational filler. Ignoring.")
             return MemoryExtractionResult(should_remember=False, extracted_items=[], raw_llm_reasoning="Transient filler phrase ignored.")
+
+        # Step 1b: Reject greeting/small talk (no enduring value)
+        for gpat in self._greeting_patterns:
+            if gpat.match(clean_q) and len(clean_q.split()) <= 6:
+                logger.debug(f"Query '{clean_q}' classified as greeting/small talk. Ignoring.")
+                return MemoryExtractionResult(should_remember=False, extracted_items=[], raw_llm_reasoning="Greeting/small talk ignored - no enduring memory value.")
 
         extracted_items: List[MemoryExtractionItem] = []
 
@@ -182,18 +243,33 @@ class MemoryExtractor:
         existing_semantic: Optional[List[SemanticMemory]] = None,
     ) -> MemoryExtractionResult:
         """Invokes Groq LLM with strict JSON schema instructions to extract complex facts."""
-        prompt = f"""You are Antigravity's Long-Term Memory Intelligence Extractor.
+        prompt = f"""You are Vyron AI's Long-Term Memory Intelligence Extractor.
 Analyze the user's input and decide what enduring facts, events, or profile data should be stored.
 
 USER INPUT: "{user_query}"
 ASSISTANT RESPONSE: "{ai_response or ''}"
 
+MEMORY CLASSIFICATION RULES:
+| Type | Store? | Database |
+|------|--------|----------|
+| Greeting / Small Talk | IGNORE | None |
+| Personal Preference (e.g. "I like Python") | STORE | PostgreSQL + Pinecone + Neo4j |
+| User Goal (e.g. "I want to learn AI") | STORE | PostgreSQL + Pinecone + Neo4j |
+| Technical Stack (e.g. "I use FastAPI") | STORE | PostgreSQL + Neo4j |
+| Conversation Query/Response | STORE | MongoDB |
+| Knowledge Chunks | STORE | PostgreSQL + Pinecone |
+| User Relationships | STORE | Neo4j |
+| Temporary Context | SESSION only | MongoDB |
+| Retrieved Documents | REGENERATE | None |
+
 Rules:
-1. If the input is transient chat ("hello", "thanks", general technical question like "how does asyncio work"), output `"should_remember": false`.
+1. If the input is transient chat ("hello", "thanks", "how does asyncio work"), output `"should_remember": false`.
 2. If the user states a permanent preference/fact ("I like Neo4j", "I use LangGraph"), extract as `SEMANTIC`.
 3. If the user shares personal profile data ("I live in New York", "I am a Senior Engineer"), extract as `PROFILE`.
 4. If the user shares a major accomplishment or event ("We launched v2 today"), extract as `EPISODIC`.
-5. If updating a known fact, set `"action": "UPDATE"`. Otherwise `"CREATE"`.
+5. If the user mentions a goal or aspiration ("I want to become an AI engineer"), extract as `PROFILE` (category: goal).
+6. If the user mentions a project ("I'm building VYRON", "working on a chatbot"), extract as `PROFILE` (category: project).
+7. If updating a known fact, set `"action": "UPDATE"`. Otherwise `"CREATE"`.
 
 Return EXACTLY valid JSON matching this schema:
 {{

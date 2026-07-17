@@ -5,6 +5,7 @@ import re
 from typing import Dict, List, Optional, Set
 from bs4 import BeautifulSoup
 from app.ingestion.schemas import DocumentMetadata, ProcessedDocument, RawDocument
+from app.ingestion.parsers import file_parser_registry
 
 logger = logging.getLogger("app.ingestion.processor")
 
@@ -164,6 +165,62 @@ class ContentProcessor:
             f"Words: {metadata.word_count} | Valid: {processed_doc.is_valid} | Duplicate: {is_dup}"
         )
         return processed_doc
+
+    async def process_file(self, file_bytes: bytes, filename: str, mime_type: str, source_name: str = "File Upload", category: str = "upload") -> ProcessedDocument:
+        """
+        Processes a binary file upload (PDF, DOCX, Image, Audio) using the appropriate parser
+        and returns a ProcessedDocument compatible with the existing ingestion pipeline.
+        """
+        result = await file_parser_registry.parse(file_bytes, filename, mime_type)
+        if result is None:
+            return ProcessedDocument(
+                url=f"file:///{filename}",
+                title=filename,
+                source_name=source_name,
+                category=category,
+                clean_text="",
+                metadata=DocumentMetadata(title=filename, word_count=0),
+                content_hash=self._compute_content_hash(""),
+                version=1,
+                is_duplicate=False,
+                validation_errors=[f"No parser found for MIME type '{mime_type}'"],
+            )
+
+        text = result.text
+        content_hash = self._compute_content_hash(text)
+        is_dup = content_hash in self._seen_content_hashes
+        if not is_dup:
+            self._seen_content_hashes.add(content_hash)
+
+        word_count = len(text.split())
+        validation_errors = []
+        if word_count < self.min_word_count and result.file_type not in ("image_description",):
+            validation_errors.append(f"Extracted text word count ({word_count}) below minimum threshold ({self.min_word_count}).")
+        if word_count > self.max_word_count:
+            validation_errors.append(f"Extracted text word count ({word_count}) exceeds maximum threshold ({self.max_word_count}).")
+        if not text.strip():
+            validation_errors.append("Extracted text is empty.")
+
+        meta = DocumentMetadata(
+            title=result.title,
+            word_count=word_count,
+            description=f"Parsed from {filename} ({result.file_type})",
+            keywords=[result.file_type, mime_type],
+            custom=result.metadata,
+        )
+
+        return ProcessedDocument(
+            url=f"file:///{filename}",
+            title=result.title,
+            source_name=source_name,
+            category=category,
+            clean_text=text,
+            metadata=meta,
+            content_hash=content_hash,
+            version=1,
+            is_duplicate=is_dup,
+            validation_errors=validation_errors,
+        )
 
     def reset_duplicate_tracker(self) -> None:
         """Clears in-memory duplicate tracker."""

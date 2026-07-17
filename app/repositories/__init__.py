@@ -26,6 +26,8 @@ from app.repositories.postgres import (
     ConfigurationItemTable,
     DocumentRepository,
     DocumentTable,
+    DocumentFileRepository,
+    DocumentFileTable,
 )
 from app.repositories.mongodb import (
     ConversationRepository,
@@ -69,6 +71,8 @@ __all__ = [
     "ConfigurationItemTable",
     "DocumentRepository",
     "DocumentTable",
+    "DocumentFileRepository",
+    "DocumentFileTable",
     # MongoDB
     "ConversationRepository",
     "MessageRepository",
