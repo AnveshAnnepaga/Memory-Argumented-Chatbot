@@ -76,6 +76,127 @@
       "tokens_used": 80,
       "conversation_id": "session-1784352024259-zm9rhb",
       "timestamp": "2026-07-18T05:20:34.930130"
+    },
+    {
+      "id": "hist-24ce0ec3d18e",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "explain langchain?",
+      "response": "LangChain is a framework designed to simplify the development of applications powered by large language models (LLMs). It provides modular components and tools to build context-aware, reasoning-driven applications that can interact with external data sources, maintain memory, and orchestrate complex workflows.  \n\nKey features include:  \n- **LLM Integration**: Supports multiple LLMs and chat models (e.g., GPT, Claude) for flexible model selection.  \n- **Chains**: Combines multiple components (e.g., prompts, models, external APIs) into reusable sequences for complex tasks.  \n- **Data Augmentation**: Enables applications to pull real-time data from databases, APIs, or documents.  \n- **Memory**: Manages short-term and long-term context for stateful interactions (e.g., chat history).  \n- **Agents**: Allows autonomous decision-making by selecting actions based on inputs (e.g., choosing tools dynamically).  \n- **Evaluation**: Tools to test and refine application performance.  \n\nFor detailed documentation, visit [docs.langchain.com](https://docs.langchain.com).",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 86347.77,
+      "tokens_used": 70,
+      "conversation_id": "session-1784352024259-zm9rhb",
+      "timestamp": "2026-07-18T06:18:48.664851"
+    },
+    {
+      "id": "hist-2d06f3c176af",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "Explain Langchain?",
+      "response": "Langchain is an AI platform that enables users to build and interact with large language models, including LangGraph, a graph-based language model. It combines hybrid retrieval-augmented generation (RAG) with dense semantic vector search and sparse lexical keyword matching to provide a powerful and efficient way to retrieve and generate text.\n\nHere are the key components of Langchain:\n\n* **Hybrid Retrieval-Augmented Generation (RAG)**: combines dense semantic vector search with sparse lexical keyword matching to retrieve relevant information.\n* **Retrieval Fusion Engine**: applies Min-Max score normalization and Reciprocal Rank Fusion (RRF) to prevent unfair competition between BM25 and Pinecone scores.\n* **Cross-Encoder Reranker**: evaluates exact query-passage contextual relevance before injecting the context into LangGraph workflows.\n* **LangGraph**: a graph-based language model that enables users to build and interact with large language models.\n\nBy using Langchain, users can leverage the strengths of RAG, retrieval fusion, and cross-encoder reranking to create more accurate and relevant text generation models.",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 27405.1,
+      "tokens_used": 137,
+      "conversation_id": "session-1784352024259-zm9rhb",
+      "timestamp": "2026-07-18T06:25:10.305032"
+    },
+    {
+      "id": "hist-b61e9565eca1",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "explain langchain?",
+      "response": "LangChain is a framework designed to simplify the development of applications powered by large language models (LLMs). It provides modular components and tools to efficiently build, extend, and deploy LLM-based workflows. Key aspects include:\n\n- **Retrieval-Augmented Generation (RAG)**: Combines dense semantic vector search (e.g., Pinecone) with sparse lexical matching (e.g., BM25Okapi) to retrieve relevant context for LLMs.  \n- **Retrieval Fusion Engine**: Normalizes scores (Min-Max) and fuses results using Reciprocal Rank Fusion (RRF) to resolve conflicts between retrieval methods.  \n- **Cross-Encoder Reranker**: Re-evaluates the relevance of retrieved passages using contextual understanding before injecting them into workflows, without invoking the LLM during retrieval.  \n- **LangGraph**: Integrates retrieved context into structured workflows (e.g., question answering, chatbots) while minimizing LLM calls.  \n\nAdditional features include chains (composable sequences of steps), agents (decision-making frameworks), memory management, and support for multiple LLMs and vector stores.",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 36685.1,
+      "tokens_used": 187,
+      "conversation_id": "session-1784352024259-zm9rhb",
+      "timestamp": "2026-07-18T06:28:35.693546"
+    },
+    {
+      "id": "hist-c888a07ee2e8",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "explain langchain?",
+      "response": "LangChain is a framework for developing applications powered by language models (LLMs), enabling dynamic interaction with data and external systems. It provides modular components to build context-aware, reasoning-driven applications.  \n\nKey features include:  \n- **LLM Integration**: Supports multiple language models (e.g., GPT, Llama) for text generation and inference.  \n- **Prompt Management**: Templates and dynamic prompt engineering to optimize LLM inputs.  \n- **Chains**: Composable sequences of steps (e.g., combining LLM calls with external data lookups).  \n- **Memory**: State management for persistent context across interactions (e.g., conversation history).  \n- **Agents**: Decision-making systems that use LLMs to choose actions based on inputs and tools.  \n- **Retrieval**: Combines semantic search (e.g., vector databases like Pinecone) with lexical methods (BM25) via fusion techniques (Min-Max normalization, RRF) to enhance relevance.  \n- **LangGraph**: Workflow orchestration for complex applications, integrating retrieval and LLMs without redundant model calls.",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 41230.97,
+      "tokens_used": 187,
+      "conversation_id": "session-1784352024259-zm9rhb",
+      "timestamp": "2026-07-18T06:32:48.944306"
+    },
+    {
+      "id": "hist-12df910b0839",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "Explain LangChain?",
+      "response": "LangChain is a framework designed to simplify the development of applications that leverage large language models (LLMs) by providing modular components and workflows for chaining together different operations. It enables dynamic interactions between models, external data sources, and user inputs.\n\nKey features and components:\n- **Chains**: Sequences of steps that combine LLM calls with other operations (e.g., data retrieval, preprocessing) to create complex workflows.\n- **Agents**: Decision-making components that dynamically choose actions based on input context, such as selecting which tool or API to use next.\n- **Memory**: Modules for managing state across interactions, allowing applications to retain information about past conversations or user history.\n- **Retrieval Integration**: Supports fetching relevant external data (e.g., documents, databases) to enhance model responses using techniques like retrieval-augmented generation (RAG).\n- **Cross-Model Coordination**: Enables interactions between different models or components, such as using a smaller model for initial processing and a larger one for final responses.",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 50008.59,
+      "tokens_used": 121,
+      "conversation_id": "session-1784352024259-zm9rhb",
+      "timestamp": "2026-07-18T06:41:11.753575"
+    },
+    {
+      "id": "hist-13e5cfe5c585",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "explain langgraph?",
+      "response": "The LangGraph documentation has moved to docs.langchain.com. For the most up-to-date information, please visit this new location.",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 11677.48,
+      "tokens_used": 79,
+      "conversation_id": "session-1784352024259-zm9rhb",
+      "timestamp": "2026-07-18T06:47:59.529706"
+    },
+    {
+      "id": "hist-11d3daaba8a3",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "explain langgraph",
+      "response": "LangGraph is not a widely recognized or established term in the field of language models or artificial intelligence as of the knowledge cutoff in 2023. However, based on the context provided (mention of LangChain documentation), it could potentially refer to a conceptual or emerging framework related to graph-based structures for language model applications. Here\u2019s a speculative explanation based on common patterns in AI/LLM tooling:\n\n**LangGraph (Hypothetical Overview):**\n- **Graph-Based Architecture**: May involve representing data, workflows, or model interactions as graphs, enabling modular and composable AI systems.\n- **Integration with LLMs**: Could facilitate connections between large language models (LLMs), external data sources, and APIs through structured graph relationships.\n- **Dynamic Reasoning**: Might allow models to traverse graphs for multi-step reasoning, combining internal knowledge with external tools or databases.\n- **Use Cases**: Potential applications in question-answering systems, code generation, or decision-making pipelines where relationships between entities are critical.\n- **LangChain Relation**: If tied to LangChain, it might extend its capabilities by adding graph-based memory or state management for agent-based workflows.\n\nFor precise details, consult the official documentation at [docs.langchain.com](https://docs.langchain.com) if LangGraph is an official component.",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 37564.21,
+      "tokens_used": 82,
+      "conversation_id": "session-1784352024259-zm9rhb",
+      "timestamp": "2026-07-18T06:55:37.689798"
+    },
+    {
+      "id": "hist-1266464d2218",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "explain langgraph?",
+      "response": "LangGraph is a framework designed to enhance the development and management of applications that utilize large language models (LLMs). It builds upon the LangChain ecosystem, extending its capabilities by introducing a graph-based structure to represent and organize data, models, and interactions. This graph-based approach allows for more dynamic and context-aware workflows, enabling developers to create complex, interconnected applications where components can interact seamlessly.\n\nKey features of LangGraph include:\n- **Graph Structure**: Represents entities, their relationships, and interactions as nodes and edges, facilitating a more intuitive and scalable way to manage application components.\n- **Context Management**: Maintains and propagates context across different parts of the application, improving the coherence and relevance of model outputs.\n- **Modularity**: Supports the integration of various LLMs, data sources, and tools within a unified framework, promoting flexibility and customization.\n- **State Tracking**: Enables persistent tracking of application state and user interactions, which is crucial for building multi-step workflows and memory-intensive applications.\n\nLangGraph is particularly useful for applications requiring complex reasoning, such as question-answering systems, chatbots with long-term memory, or data analysis tools that need to synthesize information from multiple sources. By leveraging graph theory principles, it provides a structured yet adaptable environment for developing sophisticated language model-driven solutions.",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 29344.92,
+      "tokens_used": 82,
+      "conversation_id": "session-1784352024259-zm9rhb",
+      "timestamp": "2026-07-18T07:00:38.812803"
+    },
+    {
+      "id": "hist-7e7aa7513536",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "explain langgraph?",
+      "response": "LangGraph is a framework designed to build stateful, composable, and interactive applications powered by language models. It extends the capabilities of LangChain by introducing a graph-based architecture that manages complex interactions between components such as prompts, chains, agents, and memory systems. This structure allows developers to model workflows as graphs, enabling dynamic and flexible orchestration of language model interactions.\n\nKey features include:\n- **State Management**: Maintains context and history across interactions, crucial for applications requiring persistent memory.\n- **Composability**: Components can be combined modularly, allowing reuse and customization of workflows.\n- **Graph-Based Workflow**: Dependencies and data flows between elements are explicitly defined, improving transparency and scalability.\n- **Integration**: Supports connections to external data sources, APIs, and tools, enhancing the functionality of applications.\n\nLangGraph is particularly useful for building applications that involve multi-step reasoning, interactive sessions, or integration with external systems, such as chatbots, decision-support tools, or automated agents. It abstracts the complexity of managing interactions, letting developers focus on application logic rather than low-level coordination.",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 42736.47,
+      "tokens_used": 101,
+      "conversation_id": "session-1784352024259-zm9rhb",
+      "timestamp": "2026-07-18T07:07:39.031406"
+    },
+    {
+      "id": "hist-a108c4a19fca",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "explain langgraph",
+      "response": "LangGraph is a framework designed to enhance the capabilities of large language models (LLMs) by integrating retrieval-augmented generation (RAG) techniques. It enables LLMs to dynamically access and incorporate external knowledge sources during response generation, improving accuracy and relevance for complex or domain-specific queries. The system combines multiple retrieval strategies, including dense semantic vector search and sparse lexical keyword matching (e.g., BM25Okapi), to identify relevant information from knowledge bases. \n\nTo ensure balanced retrieval results, LangGraph employs a Retrieval Fusion Engine that normalizes scores using Min-Max scaling and merges them via Reciprocal Rank Fusion (RRF). A Cross-Encoder Reranker then evaluates the contextual relevance of retrieved passages before injecting them into the LLM's processing pipeline. This allows the model to leverage structured relationships from knowledge graphs (e.g., Neo4j databases) and multi-hop connections (e.g., \"User -> LIKES -> Topic\") alongside traditional semantic similarities. By decoupling retrieval from generation, LangGraph maintains efficiency while enriching the LLM's context with up-to-date or specialized information without requiring model retraining.",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 37813.25,
+      "tokens_used": 200,
+      "conversation_id": "session-1784352024259-zm9rhb",
+      "timestamp": "2026-07-18T07:12:34.082894"
+    },
+    {
+      "id": "hist-2dca758698a4",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "explain langGraph?",
+      "response": "LangGraph is a framework designed to enhance the capabilities of language models by integrating structured data and memory management through graph-based architectures. It enables the organization, storage, and retrieval of information in a way that mirrors natural language relationships, allowing models to maintain context, access external knowledge, and perform complex reasoning tasks. Key features include:\n\n- **Graph Structure**: Uses nodes and edges to represent entities and their relationships, facilitating efficient traversal and querying of data.\n- **Memory Management**: Supports persistent memory for applications, allowing models to retain and recall information across interactions.\n- **Data Integration**: Combines disparate data sources into a unified graph, enabling models to draw connections between diverse pieces of information.\n- **Dynamic Reasoning**: Enables models to perform multi-step reasoning by navigating the graph to answer questions or complete tasks.\n\nLangGraph is often used in applications requiring context-aware responses, such as chatbots, question-answering systems, or personalized recommendation engines. It is part of the broader LangChain ecosystem, which provides tools for building language model-driven applications.",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 71133.98,
+      "tokens_used": 101,
+      "conversation_id": "session-1784364638228-4c4okw",
+      "timestamp": "2026-07-18T08:51:57.794521"
     }
   ]
 }

@@ -8,9 +8,9 @@
       "is_active": true,
       "is_verified": false,
       "created_at": "2026-07-18T04:27:18.542313",
-      "updated_at": "2026-07-18T04:27:18.542313",
-      "last_login": null,
-      "last_ip": null
+      "updated_at": "2026-07-18T06:17:10.962639",
+      "last_login": "2026-07-18T06:17:10.962639",
+      "last_ip": "127.0.0.1"
     }
   },
   "email_to_id": {

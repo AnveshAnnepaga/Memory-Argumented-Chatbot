@@ -294,9 +294,10 @@ Return EXACTLY valid JSON matching this schema:
                 messages=full_prompt,
                 max_tokens=400,
                 temperature=0.1,
+                provider_key="groq",
             )
-            raw_res = resp.get("content", "") if isinstance(resp, dict) else str(resp)
-            clean_json = raw_res.strip()
+            raw_res = (resp.get("content") or "") if isinstance(resp, dict) else str(resp or "")
+            clean_json = str(raw_res).strip()
             if clean_json.startswith("[Mock Completion") or llm_manager.active_provider_key == "mock":
                 item = MemoryExtractionItem(
                     action=MemoryAction.CREATE,
@@ -310,11 +311,10 @@ Return EXACTLY valid JSON matching this schema:
                 )
                 return MemoryExtractionResult(should_remember=True, extracted_items=[item], raw_llm_reasoning="Mock mode JSON extraction")
 
-            if clean_json.startswith("```json"):
-                clean_json = clean_json[7:]
-            if clean_json.endswith("```"):
-                clean_json = clean_json[:-3]
-            clean_json = clean_json.strip()
+            brace_start = clean_json.find("{")
+            brace_end = clean_json.rfind("}")
+            if brace_start != -1 and brace_end > brace_start:
+                clean_json = clean_json[brace_start:brace_end + 1]
 
             data = json.loads(clean_json)
             should_remember = bool(data.get("should_remember", False))

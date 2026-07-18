@@ -107,7 +107,7 @@ class GroqProvider(BaseLLMProvider):
         formatted_messages = (
             [{"role": "user", "content": messages}] if isinstance(messages, str) else messages
         )
-        target_model = model or settings.ai.models.chat_model
+        target_model = model or settings.ai.groq.model
         temp = temperature if temperature is not None else settings.ai.groq.temperature
         tokens = max_tokens if max_tokens is not None else settings.ai.groq.max_tokens
 

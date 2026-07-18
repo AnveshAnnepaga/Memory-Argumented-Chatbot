@@ -34,14 +34,16 @@ logger = logging.getLogger("app.evaluation.metrics")
 # =============================================================================
 
 def _extract_significant_words(text: str) -> set:
-    """Extracts lowercase words (length >= 4) and numbers from text, filtering stop words."""
+    """Extracts lowercase words (length >= 2) and numbers from text, filtering stop words."""
     stop_words = {
         "this", "that", "with", "from", "have", "were", "been", "there", "their",
         "which", "would", "could", "should", "about", "what", "when", "where",
-        "also", "than", "then", "some", "more", "into", "because", "between"
+        "also", "than", "then", "some", "more", "into", "because", "between",
+        "is", "an", "at", "by", "be", "to", "of", "in", "it", "on", "as", "or",
+        "for", "if", "do", "no", "he", "she", "we", "my", "me", "up", "so"
     }
-    words = re.findall(r"\b[a-z0-9]{3,}\b", text.lower())
-    return {w for w in words if w not in stop_words and len(w) >= 3}
+    words = re.findall(r"\b[a-z0-9]{2,}\b", text.lower())
+    return {w for w in words if w not in stop_words}
 
 
 def calculate_groundedness(response: str, context: str) -> float:
@@ -62,7 +64,7 @@ def calculate_groundedness(response: str, context: str) -> float:
     ctx_words = _extract_significant_words(context)
     overlap = resp_words.intersection(ctx_words)
     score = len(overlap) / float(len(resp_words))
-    return round(min(1.0, score + 0.15), 4)  # 15% semantic allowance for paraphrasing
+    return round(min(1.0, score + 0.05), 4)  # 5% semantic allowance for paraphrasing
 
 
 def calculate_faithfulness(response: str, context: str) -> float:

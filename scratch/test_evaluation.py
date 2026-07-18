@@ -1,7 +1,7 @@
 # File: scratch/test_evaluation.py
 """
 (`Milestone 14 Comprehensive Verification Suite`)
-Verifies all 11 core evaluation, monitoring, and observability pillars:
+Verifies all 12 core evaluation, monitoring, and observability pillars:
 1. RAG Metrics verification
 2. Knowledge Graph Metrics verification
 3. Memory System Metrics verification
@@ -13,6 +13,7 @@ Verifies all 11 core evaluation, monitoring, and observability pillars:
 9. Metrics Aggregation verification (Request, Session, User, Day, System)
 10. Dashboard JSON API (DashboardService) verification
 11. End-to-End Orchestration read-only evaluation integration
+12. RAGAS LLM-as-Judge evaluation integration
 """
 import asyncio
 import json
@@ -40,6 +41,7 @@ from app.evaluation import (
     dashboard_service,
     evaluation_pipeline
 )
+from app.evaluation.ragas_evaluator import ragas_evaluator, _RAGAS_AVAILABLE
 from app.orchestration.pipeline import orchestration_pipeline
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -55,7 +57,7 @@ async def verify_pillar_1_rag_metrics():
         "timing": {"rag_retrieval_node": 35.2},
         "metadata": {"conversation_id": "sess-rag-1", "route_taken": "HYBRID_RAG", "execution_time_ms": 110.0}
     }
-    report = evaluator.evaluate_workflow(state)
+    report = await evaluator.evaluate_workflow(state)
     assert report.rag_metrics.retrieval_precision > 0.0, "RAG precision should be > 0"
     assert report.rag_metrics.groundedness >= 0.7, "Groundedness should reflect context match"
     assert report.rag_report.retrieved_chunks_count == 2, f"Expected 2 chunks, got {report.rag_report.retrieved_chunks_count}"
@@ -71,7 +73,7 @@ async def verify_pillar_2_graph_metrics():
         "timing": {"graph_retrieval_node": 15.0},
         "metadata": {"conversation_id": "sess-graph-1", "route_taken": "GRAPH_RAG", "execution_time_ms": 85.0}
     }
-    report = evaluator.evaluate_workflow(state)
+    report = await evaluator.evaluate_workflow(state)
     assert report.graph_metrics.relationship_accuracy >= 0.95, "Relationship accuracy should reflect conf scores"
     assert report.graph_metrics.average_node_degree > 0.0, "Node degree should be > 0"
     logger.info(f"✅ Knowledge Graph Metrics verified successfully: RelAccuracy={report.graph_metrics.relationship_accuracy:.4f}, Degree={report.graph_metrics.average_node_degree:.1f}")
@@ -86,7 +88,7 @@ async def verify_pillar_3_memory_metrics():
         "timing": {"memory_retrieval_node": 8.1},
         "metadata": {"conversation_id": "sess-mem-1", "route_taken": "DIRECT_LLM", "execution_time_ms": 65.0, "memory_tokens": 42}
     }
-    report = evaluator.evaluate_workflow(state)
+    report = await evaluator.evaluate_workflow(state)
     assert report.memory_metrics.memory_retrieval_accuracy >= 0.8, "Memory accuracy should be >= 0.8"
     assert report.memory_metrics.memory_token_usage == 42, f"Expected 42 memory tokens, got {report.memory_metrics.memory_token_usage}"
     logger.info(f"✅ Memory Metrics verified successfully: Accuracy={report.memory_metrics.memory_retrieval_accuracy:.2f}, Tokens={report.memory_metrics.memory_token_usage}")
@@ -101,7 +103,7 @@ async def verify_pillar_4_tool_metrics():
         "timing": {"tool_execution_node": 4.5},
         "metadata": {"conversation_id": "sess-tool-1", "route_taken": "TOOL_CALL", "execution_time_ms": 50.0}
     }
-    report = evaluator.evaluate_workflow(state)
+    report = await evaluator.evaluate_workflow(state)
     assert report.tool_metrics.tool_success_rate == 1.0, "Tool success rate should be 1.0"
     assert report.tool_metrics.cache_hit_ratio == 1.0, "Cache hit ratio should be 1.0"
     logger.info(f"✅ Tool Metrics verified successfully: SuccessRate={report.tool_metrics.tool_success_rate}, AvgExecTime={report.tool_metrics.average_execution_time_ms:.2f}ms")
@@ -117,7 +119,7 @@ async def verify_pillar_5_langgraph_metrics():
         "errors": [],
         "metadata": {"conversation_id": "sess-graph-2", "route_taken": "HYBRID_RAG", "execution_time_ms": 135.0}
     }
-    report = evaluator.evaluate_workflow(state)
+    report = await evaluator.evaluate_workflow(state)
     assert report.langgraph_metrics.node_success_rate == 1.0, "Node success rate should be 1.0"
     assert report.langgraph_metrics.state_transition_count == 6, f"Expected 6 node transitions, got {report.langgraph_metrics.state_transition_count}"
     logger.info(f"✅ LangGraph Metrics verified successfully: Transitions={report.langgraph_metrics.state_transition_count}, SuccessRate={report.langgraph_metrics.node_success_rate}")
@@ -133,7 +135,7 @@ async def verify_pillar_6_system_metrics():
         "timing": {"llm_generation_node": 140.0},
         "metadata": {"conversation_id": "sess-sys-1", "route_taken": "HYBRID_RAG", "execution_time_ms": 180.0, "rag_tokens": 120, "graph_tokens": 80}
     }
-    report = evaluator.evaluate_workflow(state)
+    report = await evaluator.evaluate_workflow(state)
     assert report.system_metrics.context_tokens == 200, f"Expected 200 context tokens, got {report.system_metrics.context_tokens}"
     assert report.system_metrics.llm_cost_estimate_usd > 0.0, "Cost estimate should be computed"
     logger.info(f"✅ System Telemetry verified successfully: ContextTokens={report.system_metrics.context_tokens}, EstimatedCost=${report.system_metrics.llm_cost_estimate_usd:.6f}")
@@ -210,6 +212,43 @@ async def verify_pillar_10_dashboard_json():
     logger.info(f"✅ Dashboard JSON verified successfully:\n{serialized}")
 
 
+async def verify_pillar_12_ragas_evaluation():
+    logger.info("\n--- [Pillar 12] RAGAS LLM-as-Judge Evaluation ---")
+    if not _RAGAS_AVAILABLE:
+        logger.warning("⚠️ RAGAS not installed; skipping Pillar 12")
+        return
+
+    queries = [
+        "What are the core features of FastAPI?",
+        "How does Hybrid RAG work?",
+    ]
+    responses = [
+        "FastAPI features automatic Swagger UI docs and async dependency injection.",
+        "Hybrid RAG combines dense vector search from Pinecone with sparse BM25 retrieval.",
+    ]
+    contexts = [
+        ["FastAPI is a modern web framework with automatic Swagger docs and async dependency injection."],
+        ["Hybrid RAG combines dense Pinecone vectors and BM25 sparse index for retrieval."],
+    ]
+    ground_truths = [
+        "FastAPI has automatic OpenAPI docs, async support, and dependency injection.",
+        "Hybrid RAG uses Pinecone dense vectors and BM25 sparse search.",
+    ]
+
+    results = await ragas_evaluator.evaluate(
+        queries=queries,
+        responses=responses,
+        contexts=contexts,
+        ground_truths=ground_truths,
+    )
+
+    assert "faithfulness" in results, "RAGAS must compute faithfulness"
+    assert "answer_relevancy" in results, "RAGAS must compute answer_relevancy"
+    assert "context_precision" in results, "RAGAS must compute context_precision"
+    assert results["faithfulness"] >= 0.0, "Faithfulness should be non-negative"
+    logger.info(f"✅ RAGAS Evaluation verified successfully: {results}")
+
+
 async def verify_pillar_11_end_to_end_orchestration():
     logger.info("\n--- [Pillar 11] End-to-End Orchestration Read-Only Integration ---")
     query = "Calculate 12 * 12 and then explain what FastAPI is."
@@ -246,9 +285,10 @@ async def main():
     await verify_pillar_9_metrics_aggregation()
     await verify_pillar_10_dashboard_json()
     await verify_pillar_11_end_to_end_orchestration()
-    
+    await verify_pillar_12_ragas_evaluation()
+
     logger.info("\n=====================================================================")
-    logger.info("🎉 ALL 11 PILLARS OF MILESTONE 14 PASSED VERIFICATION WITH ZERO ERRORS!")
+    logger.info("🎉 ALL 12 PILLARS PASSED VERIFICATION WITH ZERO ERRORS!")
     logger.info("=====================================================================")
 
 

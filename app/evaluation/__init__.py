@@ -9,6 +9,7 @@ from app.evaluation.evaluator import EvaluationEngine, evaluator
 from app.evaluation.metrics import MetricsEngine, metrics_engine
 from app.evaluation.monitor import MonitoringEngine, monitoring_engine
 from app.evaluation.pipeline import EvaluationPipeline, evaluation_pipeline
+from app.evaluation.ragas_evaluator import RAGASEvaluator, ragas_evaluator
 from app.evaluation.schemas import (
     DashboardResponse,
     EvaluationReport,

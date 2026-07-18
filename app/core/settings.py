@@ -20,6 +20,9 @@ from app.core.constants import (
     DEFAULT_FALLBACK_MODEL,
     DEFAULT_GROQ_TEMPERATURE,
     DEFAULT_GROQ_MAX_TOKENS,
+    DEFAULT_NVIDIA_MODEL,
+    DEFAULT_NVIDIA_TEMPERATURE,
+    DEFAULT_NVIDIA_MAX_TOKENS,
     DEFAULT_EMBEDDING_DIMENSION,
     DEFAULT_TOP_K,
     DEFAULT_SIMILARITY_THRESHOLD,
@@ -76,9 +79,19 @@ class AppConfig(BaseModel):
 class GroqConfig(BaseModel):
     """Groq API settings."""
     api_key: str = Field(default="", exclude=True)  # Never serialized
+    model: str = DEFAULT_CHAT_MODEL
     temperature: float = Field(default=DEFAULT_GROQ_TEMPERATURE, ge=0.0, le=2.0)
     max_tokens: int = Field(default=DEFAULT_GROQ_MAX_TOKENS, gt=0)
     timeout_seconds: int = 30
+
+
+class NvidiaConfig(BaseModel):
+    """NVIDIA NIM API settings."""
+    api_key: str = Field(default="", exclude=True)  # Never serialized
+    model: str = DEFAULT_NVIDIA_MODEL
+    temperature: float = Field(default=DEFAULT_NVIDIA_TEMPERATURE, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=DEFAULT_NVIDIA_MAX_TOKENS, gt=0)
+    timeout_seconds: int = 90
 
 
 class EmbeddingConfig(BaseModel):
@@ -98,6 +111,7 @@ class AIConfig(BaseModel):
     """Grouped AI configuration."""
     models: ModelRegistryConfig
     groq: GroqConfig
+    nvidia: NvidiaConfig
     embeddings: EmbeddingConfig
     prompt: PromptConfig
 
@@ -274,8 +288,15 @@ class Settings(BaseSettings):
 
     # Groq & AI
     GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = DEFAULT_CHAT_MODEL
     GROQ_TEMPERATURE: float = DEFAULT_GROQ_TEMPERATURE
     GROQ_MAX_TOKENS: int = DEFAULT_GROQ_MAX_TOKENS
+
+    # NVIDIA NIM
+    NVIDIA_API_KEY: str = ""
+    NVIDIA_MODEL: str = DEFAULT_NVIDIA_MODEL
+    NVIDIA_TEMPERATURE: float = DEFAULT_NVIDIA_TEMPERATURE
+    NVIDIA_MAX_TOKENS: int = DEFAULT_NVIDIA_MAX_TOKENS
 
     # Retrieval
     RETRIEVAL_TOP_K: int = DEFAULT_TOP_K
@@ -386,14 +407,22 @@ class Settings(BaseSettings):
         )
         groq_cfg = GroqConfig(
             api_key=self.GROQ_API_KEY,
+            model=self.GROQ_MODEL,
             temperature=self.GROQ_TEMPERATURE,
             max_tokens=self.GROQ_MAX_TOKENS,
+        )
+        nvidia_cfg = NvidiaConfig(
+            api_key=self.NVIDIA_API_KEY,
+            model=self.NVIDIA_MODEL,
+            temperature=self.NVIDIA_TEMPERATURE,
+            max_tokens=self.NVIDIA_MAX_TOKENS,
         )
         embeddings_cfg = EmbeddingConfig(dimension=self.PINECONE_DIMENSION)
         prompt_cfg = PromptConfig()
         self.ai = AIConfig(
             models=models_cfg,
             groq=groq_cfg,
+            nvidia=nvidia_cfg,
             embeddings=embeddings_cfg,
             prompt=prompt_cfg,
         )

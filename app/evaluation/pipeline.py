@@ -40,7 +40,7 @@ class EvaluationPipeline:
         """
         try:
             # 1. Evaluate the workflow state read-only across all 6 layers
-            report = self._evaluator.evaluate_workflow(
+            report = await self._evaluator.evaluate_workflow(
                 state=state,
                 response_text=response_text,
                 metadata=metadata

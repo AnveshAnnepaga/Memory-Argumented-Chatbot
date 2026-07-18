@@ -166,7 +166,7 @@ class RAGPipeline:
                 similarity_threshold = 0.55
 
         # Step 1: Hybrid Retrieval + Fusion Engine + Cross-Encoder Reranker
-        top_chunks = self.retriever.retrieve(
+        top_chunks = await self.retriever.retrieve(
             query=query,
             top_k=top_k,
             candidate_pool_size=candidate_pool_size,

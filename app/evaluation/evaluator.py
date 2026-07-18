@@ -19,6 +19,7 @@ from app.evaluation.metrics import (
     calculate_system_metrics,
     calculate_tool_metrics,
 )
+from app.evaluation.ragas_evaluator import ragas_evaluator, _RAGAS_AVAILABLE
 from app.evaluation.schemas import (
     EvaluationReport,
     GraphReport,
@@ -39,7 +40,7 @@ class EvaluationEngine:
     Observes LangGraph state outputs, measures individual intelligence layers,
     and constructs the unified `EvaluationReport`.
     """
-    def evaluate_workflow(
+    async def evaluate_workflow(
         self,
         state: Dict[str, Any],
         response_text: Optional[str] = None,
@@ -76,17 +77,44 @@ class EvaluationEngine:
         memory_ctx = str(state.get("retrieved_memory_context", "")).strip()
         tool_ctx = str(state.get("retrieved_tool_context", "")).strip()
 
-        # 1. Calculate layer-level metrics
+        # 1. Calculate layer-level metrics (heuristic)
         rag_metrics = calculate_rag_metrics(user_query, final_response, rag_ctx)
         graph_metrics = calculate_graph_metrics(user_query, final_response, graph_ctx)
         memory_metrics = calculate_memory_metrics(user_query, final_response, memory_ctx, memory_tokens)
         tool_metrics = calculate_tool_metrics(user_query, final_response, tool_ctx, route_taken)
         langgraph_metrics = calculate_langgraph_metrics(node_path, timing, errors, total_latency_ms)
 
+        # 1b. Run RAGAS LLM-as-judge evaluation if RAG context is present
+        ragas_metrics = {}
+        if rag_ctx and "Offline:" not in rag_ctx and _RAGAS_AVAILABLE:
+            try:
+                ragas_metrics = await ragas_evaluator.evaluate(
+                    queries=[user_query],
+                    responses=[final_response],
+                    contexts=[[rag_ctx]],
+                    ground_truths=None,
+                )
+                if ragas_metrics.get("faithfulness", 0.0) > 0:
+                    rag_metrics.faithfulness = ragas_metrics["faithfulness"]
+                if ragas_metrics.get("context_precision", 0.0) > 0:
+                    rag_metrics.context_precision = ragas_metrics["context_precision"]
+                    rag_metrics.retrieval_precision = ragas_metrics["context_precision"]
+                if ragas_metrics.get("context_recall", 0.0) > 0:
+                    rag_metrics.context_recall = ragas_metrics["context_recall"]
+                    rag_metrics.retrieval_recall = ragas_metrics["context_recall"]
+                if ragas_metrics.get("answer_relevancy", 0.0) > 0:
+                    rag_metrics.context_relevance = ragas_metrics["answer_relevancy"]
+                logger.info(f"RAGAS evaluation integrated: {ragas_metrics}")
+            except Exception as e:
+                logger.warning(f"RAGAS evaluation failed (non-blocking): {e}")
+
         # 2. Calculate overall groundedness & faithfulness across active contexts
         combined_context = "\n\n".join([c for c in [rag_ctx, graph_ctx, memory_ctx, tool_ctx] if c and "Offline:" not in c])
         overall_groundedness = calculate_groundedness(final_response, combined_context)
         overall_faithfulness = calculate_faithfulness(final_response, combined_context)
+        # Override with RAGAS faithfulness if available
+        if ragas_metrics.get("faithfulness", 0.0) > 0:
+            overall_faithfulness = ragas_metrics["faithfulness"]
 
         system_metrics = calculate_system_metrics(
             prompt_tokens=prompt_tokens,
@@ -199,7 +227,8 @@ class EvaluationEngine:
 
         logger.info(
             f"Evaluated workflow '{workflow_id}' | Status: {system_health_report.status} | "
-            f"Hallucination: {system_metrics.hallucination_score:.3f} | Confidence: {system_metrics.answer_confidence:.3f}"
+            f"Hallucination: {system_metrics.hallucination_score:.3f} | Confidence: {system_metrics.answer_confidence:.3f} | "
+            f"Groundedness: {overall_groundedness:.3f} | Faithfulness: {overall_faithfulness:.3f}"
         )
         return report
 

@@ -3,6 +3,7 @@ import logging
 from typing import Any, Dict, List, Optional, Union
 from app.ai.llm.base import BaseLLMProvider
 from app.ai.llm.groq_client import GroqProvider
+from app.ai.llm.nvidia_client import NvidiaProvider
 from app.ai.llm.mock_provider import MockLLMProvider
 from app.core.exceptions import GroqException
 from app.core.infrastructure import BaseInfrastructureManager
@@ -20,10 +21,11 @@ class LLMProviderManager(BaseInfrastructureManager):
     def __init__(self):
         super().__init__(name="groq")
         self.providers: Dict[str, BaseLLMProvider] = {}
-        self.primary_provider_key: str = "groq"
+        self.primary_provider_key: str = "nvidia"
         self._setup_providers()
 
     def _setup_providers(self) -> None:
+        self.register_provider("nvidia", NvidiaProvider())
         self.register_provider("groq", GroqProvider())
         self.register_provider("mock", MockLLMProvider())
 
@@ -51,6 +53,9 @@ class LLMProviderManager(BaseInfrastructureManager):
         primary = self.providers.get(self.primary_provider_key)
         if primary and primary.is_initialized and not getattr(primary, "stub_mode", False):
             return self.primary_provider_key
+        groq = self.providers.get("groq")
+        if groq and groq.is_initialized and not getattr(groq, "stub_mode", False):
+            return "groq"
         return "mock" if "mock" in self.providers else self.primary_provider_key
 
     def get_provider(self, provider_key: Optional[str] = None) -> BaseLLMProvider:
@@ -108,19 +113,27 @@ class LLMProviderManager(BaseInfrastructureManager):
                 **kwargs,
             )
         except Exception as exc:
-            if target_key != "mock" and "mock" in self.providers:
+            fallback_chain = ["groq", "mock"]
+            for fb_key in fallback_chain:
+                if target_key == fb_key or fb_key not in self.providers:
+                    continue
+                fb_provider = self.providers[fb_key]
+                if getattr(fb_provider, "stub_mode", False):
+                    continue
                 logger.warning(
-                    f"LLM generation on provider '{target_key}' failed ({exc}). Falling back to 'mock' provider..."
+                    f"LLM generation on provider '{target_key}' failed ({exc}). Falling back to '{fb_key}' provider..."
                 )
-                mock_provider = self.get_provider("mock")
-                return await mock_provider.generate(
-                    messages=messages,
-                    model=model,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    timeout=timeout,
-                    **kwargs,
-                )
+                try:
+                    return await fb_provider.generate(
+                        messages=messages,
+                        model=model,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        timeout=timeout,
+                        **kwargs,
+                    )
+                except Exception:
+                    continue
             raise GroqException(f"LLM generation failed across all available providers: {exc}") from exc
 
     async def close(self) -> None:
