@@ -422,13 +422,14 @@ async def update_profile(
         except Exception as exc:
             logger.warning(f"DB update_profile error: {exc}")
 
-    from app.core.security import _users_db
+    from app.core.security import _users_db, _save_users_to_file
     if current_user.id in _users_db:
         if full_name is not None:
             _users_db[current_user.id].full_name = full_name
         if email is not None:
             _users_db[current_user.id].email = email
         _users_db[current_user.id].updated_at = now
+        _save_users_to_file()
 
     db_user = _users_db.get(current_user.id, current_user)
     return UserResponse(

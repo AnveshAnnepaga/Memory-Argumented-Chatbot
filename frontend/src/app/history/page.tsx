@@ -20,6 +20,23 @@ export default function HistoryPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const handleDelete = async (e: React.MouseEvent, cid: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/chat/conversations/${encodeURIComponent(cid)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setConversations((prev) => prev.filter((c) => c.id !== cid));
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     if (!token) {
       setLoading(false);
@@ -109,6 +126,13 @@ export default function HistoryPage() {
                   <p className="text-[13px] text-on-surface-variant mt-0.5 truncate">{h.preview}</p>
                   <p className="text-[11px] font-mono text-on-surface-variant/50 mt-1">{h.msgs} messages</p>
                 </div>
+                <button
+                  onClick={(e) => handleDelete(e, h.id)}
+                  className="p-1.5 rounded-lg hover:bg-error/20 text-on-surface-variant/30 hover:text-error transition-all flex-shrink-0 mt-0.5 cursor-pointer"
+                  title="Delete conversation"
+                >
+                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                </button>
                 <span className="material-symbols-outlined text-on-surface-variant/30 group-hover:text-primary/60 transition-colors text-[18px] flex-shrink-0 mt-1">chevron_right</span>
               </Link>
             ))

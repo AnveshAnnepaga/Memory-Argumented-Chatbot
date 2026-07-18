@@ -22,6 +22,14 @@ interface UploadedFileInfo {
   error?: string;
 }
 
+interface ConversationSummary {
+  id: string;
+  title: string;
+  last_message: string;
+  updated_at: string;
+  message_count: number;
+}
+
 interface ChatMessage {
   id: string;
   sender: "user" | "assistant";
@@ -31,7 +39,7 @@ interface ChatMessage {
 
 export default function ChatStudioPage() {
   const searchParams = useSearchParams();
-  const { token, authUser, incrementConversationSaveCount } = useAppStore();
+  const { token, authUser, conversationSaveCount, incrementConversationSaveCount } = useAppStore();
   const [conversationId, setConversationId] = useState(searchParams.get("conversation") || generateSessionId());
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -46,6 +54,8 @@ export default function ChatStudioPage() {
   const [isThreadSidebarOpen, setIsThreadSidebarOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFileInfo[]>([]);
   const [showFileUploader, setShowFileUploader] = useState(false);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [conversationsLoading, setConversationsLoading] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pendingSendRef = useRef<UploadedFileInfo[] | null>(null);
@@ -84,6 +94,44 @@ export default function ChatStudioPage() {
       })
       .catch(() => {});
   }, [token, searchParams]);
+
+  const fetchConversations = useCallback(async () => {
+    if (!token) return;
+    setConversationsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/v1/chat/conversations`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setConversations(data.data || []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setConversationsLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations, conversationSaveCount]);
+
+  const handleDeleteConversation = useCallback(async (cid: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/api/v1/chat/conversations/${encodeURIComponent(cid)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setConversations((prev) => prev.filter((c) => c.id !== cid));
+      }
+    } catch {
+      // ignore
+    }
+  }, [token]);
 
   useEffect(() => {
     if (pendingSendRef.current && sendMessageRef.current) {
@@ -267,8 +315,44 @@ export default function ChatStudioPage() {
               New Conversation
             </button>
           </div>
-          <div className="flex-grow flex items-center justify-center">
-            <p className="text-body-sm text-on-surface-variant">No past conversations</p>
+          <div className="flex-grow overflow-y-auto custom-scrollbar px-2 py-2">
+            {conversationsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+              </div>
+            ) : conversations.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <p className="text-body-sm text-on-surface-variant">No past conversations</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    onClick={() => {
+                      window.location.href = `/chat?conversation=${encodeURIComponent(conv.id)}`;
+                    }}
+                    className="group flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-surface-variant/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex-grow min-w-0">
+                      <p className="text-label-md font-semibold text-on-surface truncate">
+                        {conv.title}
+                      </p>
+                      <p className="text-body-xs text-on-surface-variant truncate">
+                        {conv.message_count} messages
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => handleDeleteConversation(conv.id, e)}
+                      className="p-1.5 rounded-lg hover:bg-error/20 text-on-surface-variant hover:text-error transition-all cursor-pointer flex-shrink-0"
+                      title="Delete conversation"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </aside>
       )}
@@ -295,6 +379,22 @@ export default function ChatStudioPage() {
             {saveMsg && (
               <span className="text-[11px] font-mono text-tertiary animate-pulse">{saveMsg}</span>
             )}
+            <button
+              onClick={() => {
+                setConversationId(generateSessionId());
+                setMessages([{
+                  id: `msg-${Date.now()}`,
+                  sender: "assistant",
+                  text: "Ready for a new conversation.",
+                }]);
+                setUploadedFiles([]);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-secondary-container/20 text-secondary text-[12px] font-bold hover:bg-secondary-container/40 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+              title="Start a new conversation"
+            >
+              <span className="material-symbols-outlined text-[16px]">add_circle</span>
+              New Chat
+            </button>
             <button
               onClick={async () => {
                 const allMsgs = messages.filter(m => m.id !== "welcome" && m.text);

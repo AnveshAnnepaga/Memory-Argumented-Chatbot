@@ -99,7 +99,7 @@ def _scrub_token(text: str, token: str) -> str:
     pattern = re.compile(r"\b" + re.escape(token) + r"\b", re.IGNORECASE)
     cleaned = pattern.sub("", text)
     cleaned = re.sub(r"[\s\.,;:!\?]+(?=[\s\.,;:!\?])", " ", cleaned)
-    cleaned = re.sub(r"\s{2,}", " ", cleaned)
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
     return cleaned.strip()
 
 
@@ -197,7 +197,6 @@ def _strip_source_disclosures(text: str) -> str:
                 break
             cleaned = cleaned[: m.start()] + cleaned[m.end():]
 
-    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     return cleaned.strip()
 
@@ -207,6 +206,7 @@ def sanitize_text(text: Any) -> str:
 
     IMPORTANT: This sanitizer must NEVER alter ordinary punctuation in valid answers.
     It only removes confidential/internal markers and trims dangling whitespace.
+    Code blocks (```...```) are protected from all transformations.
 
     Defense-in-depth policy:
     1) URLs and markdown URLs (label preserved when present)
@@ -223,7 +223,13 @@ def sanitize_text(text: Any) -> str:
         return ""
     if not isinstance(text, str):
         text = str(text)
-    cleaned = text
+
+    # Protect code blocks from all sanitization patterns
+    code_blocks = []
+    def _save_code(m):
+        code_blocks.append(m.group(0))
+        return f"__CODEBLOCK_{len(code_blocks)-1}__"
+    cleaned = re.sub(r"```[\w-]*\n.*?```", _save_code, text, flags=re.DOTALL)
 
     # 1) Drop URLs (preserve surrounding punctuation).
     cleaned = _strip_urls(cleaned)
@@ -245,18 +251,15 @@ def sanitize_text(text: Any) -> str:
     cleaned = _URL_LINE.sub("", cleaned)
     cleaned = _SCORE_LINE.sub("", cleaned)
     cleaned = _SOURCE_LINE.sub("", cleaned)
-    # These may have left dangling "URL:" / "Source:" / "Score:" - clean again.
     cleaned = _strip_url_label_orphans(cleaned)
 
-    # 7) Drop internal category labels (e.g. "LONG-TERM USER MEMORY").
+    # 7) Drop internal category labels.
     cleaned = _LABEL_NOISE.sub("", cleaned)
 
-    # 8) Strip source-disclosure sentences. Run BEFORE vendor token strip so we don't
-    # accidentally lose model-name references that we want preserved (e.g. "LangChain").
+    # 8) Strip source-disclosure sentences.
     cleaned = _strip_source_disclosures(cleaned)
 
-    # 9) Strip entire "Here's what I found: <context> Want me to dig deeper?"
-    # style dumps where filler intro is followed by retrieval body.
+    # 9) Strip "Here's what I found" / "Based on your question" dumps.
     cleaned = re.sub(
         r"(?im)^\s*Here'?s what I found\s*:?\s*\n[\s\S]*?(?:Want me to dig deeper\?.*?)?\s*$",
         "",
@@ -268,15 +271,29 @@ def sanitize_text(text: Any) -> str:
         cleaned,
     )
 
-    # 10) Strip vendor / model / internal tokens. Framework names (LangChain,
-    # LangGraph) are public technologies and intentionally NOT scrubbed here.
+    # 10) Strip vendor / model / internal tokens.
     for tok in _INTERNAL_TOKENS + _MODEL_TOKENS + _VENDOR_TOKENS:
         cleaned = re.sub(r"\b" + re.escape(tok) + r"\b", "", cleaned, flags=re.IGNORECASE)
 
-    # Final tidying - only whitespace and orphan brackets, never re-collapsing punctuation.
-    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    # Restore code blocks
+    for i, block in enumerate(code_blocks):
+        cleaned = cleaned.replace(f"__CODEBLOCK_{i}__", block)
+
+    # Re-protect code blocks for final cleanup so regexes don't damage code
+    final_blocks: list[str] = []
+    cleaned = re.sub(
+        r"```[\w-]*\n.*?```",
+        lambda m: final_blocks.append(m.group(0)) or f"__FINALBLOCK_{len(final_blocks)-1}__",
+        cleaned,
+        flags=re.DOTALL,
+    )
+
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     cleaned = _strip_url_label_orphans(cleaned)
+
+    for i, block in enumerate(final_blocks):
+        cleaned = cleaned.replace(f"__FINALBLOCK_{i}__", block)
+
     return cleaned.strip()
 
 

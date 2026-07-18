@@ -2,6 +2,7 @@
 import asyncio
 import json
 import logging
+import os
 import re
 import uuid
 from typing import Optional, AsyncGenerator, Dict, Any, List
@@ -15,6 +16,7 @@ from app.api.dependencies import get_request_id
 from app.schemas.common import APIResponse, success_response
 from app.orchestration.pipeline import orchestration_pipeline
 from app.orchestration.schemas import WorkflowResponse
+from app.memory.pipeline import memory_pipeline
 from app.utils.sanitizer import sanitize_text
 from app.core.security import (
     get_current_user,
@@ -603,6 +605,35 @@ def _public_chat_payload(result: WorkflowResponse, original_query: str = "") -> 
 
 _chat_history: Dict[str, List[Dict[str, Any]]] = {}
 
+# JSON file persistence for chat history across server restarts
+_CHAT_HISTORY_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "data", "chat_history.json")
+
+
+def _save_chat_history() -> None:
+    try:
+        os.makedirs(os.path.dirname(_CHAT_HISTORY_FILE), exist_ok=True)
+        with open(_CHAT_HISTORY_FILE, "w") as f:
+            json.dump(_chat_history, f, indent=2, default=str)
+    except Exception as exc:
+        logger.warning(f"Failed to save chat history to file: {exc}")
+
+
+def _load_chat_history() -> None:
+    try:
+        if not os.path.exists(_CHAT_HISTORY_FILE):
+            return
+        with open(_CHAT_HISTORY_FILE) as f:
+            data = json.load(f)
+        _chat_history.clear()
+        _chat_history.update(data)
+        logger.info(f"Loaded chat history from file ({sum(len(v) for v in data.values())} entries)")
+    except Exception as exc:
+        logger.warning(f"Failed to load chat history from file: {exc}")
+
+
+# Load persisted chat history on startup
+_load_chat_history()
+
 
 async def _load_file_attachments(file_ids: List[str], image_ids: List[str]) -> str:
     """
@@ -669,6 +700,7 @@ async def store_chat_history(
     _chat_history[user_id].append(entry)
     if len(_chat_history[user_id]) > 1000:
         _chat_history[user_id] = _chat_history[user_id][-1000:]
+    _save_chat_history()
 
     # Persist to MongoDB
     try:
@@ -787,6 +819,13 @@ async def process_chat_query(
             tokens_used=result.metadata.total_prompt_tokens if result.metadata else 0,
             conversation_id=conversation_id,
         )
+        # Store conversation turn in memory pipeline for follow-up context
+        await memory_pipeline.process_turn(
+            user_query=payload.query,
+            ai_response=result.response or "",
+            user_id=current_user.id,
+            conversation_id=conversation_id,
+        )
     
     return success_response(
         data=public_payload,
@@ -862,6 +901,12 @@ async def stream_chat_query(
                     route_type=result.router_decision.route.value if result.router_decision else "UNKNOWN",
                     execution_time_ms=result.metadata.execution_time_ms if result.metadata else 0,
                     tokens_used=result.metadata.total_prompt_tokens if result.metadata else 0,
+                    conversation_id=conversation_id,
+                )
+                await memory_pipeline.process_turn(
+                    user_query=payload.query,
+                    ai_response=result.response or "",
+                    user_id=current_user.id,
                     conversation_id=conversation_id,
                 )
             
@@ -970,6 +1015,8 @@ async def save_conversation(
             _chat_history[user_id].append(entry)
             user_text = ""
 
+    _save_chat_history()
+
     if first_query:
         logger.info(f"Conversation '{cid}' saved for user {user_id} (starts with: {first_query[:50]})")
 
@@ -1003,6 +1050,44 @@ async def get_conversation_messages(
     )
 
 
+@router.delete("/conversations/{conversation_id}", summary="Delete a Single Conversation")
+async def delete_conversation(
+    conversation_id: str,
+    current_user: UserInDB = Depends(get_current_user),
+    request_id: str = Depends(get_request_id),
+):
+    """Delete all entries for a given conversation_id for the authenticated user."""
+    user_id = current_user.id
+    if user_id not in _chat_history:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found",
+        )
+
+    before = len(_chat_history[user_id])
+    _chat_history[user_id] = [
+        e for e in _chat_history[user_id]
+        if e.get("conversation_id") != conversation_id
+    ]
+    removed = before - len(_chat_history[user_id])
+
+    if removed == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found",
+        )
+
+    _save_chat_history()
+
+    logger.info(f"Conversation '{conversation_id}' deleted for user {user_id} ({removed} entries removed)")
+
+    return success_response(
+        data={"conversation_id": conversation_id, "removed_entries": removed},
+        message="Conversation deleted successfully",
+        request_id=request_id,
+    )
+
+
 @router.delete("/history", summary="Clear User Chat History")
 async def clear_chat_history(
     current_user: UserInDB = Depends(get_current_user),
@@ -1012,6 +1097,7 @@ async def clear_chat_history(
     user_id = current_user.id
     if user_id in _chat_history:
         _chat_history[user_id] = []
+        _save_chat_history()
     
     await audit_log(current_user.id, "history_clear", "history", {}, None, True)
     

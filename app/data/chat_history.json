@@ -1,0 +1,81 @@
+{
+  "usr_HwrOijx2T5pzUWtVTq3HLw": [
+    {
+      "id": "hist-26103402e368",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "explain about LLMs and RAG?",
+      "response": "LLMs (Large Language Models) and RAGs (Retrieval-Augmented Generation) are related but distinct concepts in the field of natural language processing.\n\n### What are LLMs?\n\n* Large Language Models are a type of artificial intelligence designed to process and generate human-like language.\n* They are trained on vast amounts of text data, allowing them to learn patterns and relationships within language.\n* LLMs can be fine-tuned for specific tasks, such as language translation, text summarization, or conversational dialogue.\n\n### What are RAGs?\n\n* Retrieval-Augmented Generation models are a type of LLM that uses a combination of retrieval and generation techniques to produce high-quality responses.\n* RAGs use a separate retrieval model to search for relevant information in a large database or knowledge graph, and then use this information to inform the generation of a response.\n* This approach allows RAGs to leverage the strengths of both retrieval and generation, producing more accurate and informative responses.\n\n### How do LLMs and RAGs work together?\n\n* LLMs can be used to generate initial responses or prompts, which are then used to retrieve relevant information from a database or knowledge graph using a RAG.\n* The retrieved information is then used to refine and improve the generated response, resulting in a more accurate and informative final answer.\n\n### Benefits of RAGs\n\n* Improved accuracy and relevance of responses\n* Ability to handle complex and open-ended questions\n* Ability to incorporate external knowledge and information into the response\n\n### Challenges of RAGs\n\n* Requires large amounts of high-quality training data\n* Can be computationally expensive to train and deploy\n* Requires careful tuning and optimization of the retrieval and generation components.",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 1222.37,
+      "tokens_used": 94,
+      "conversation_id": "session-1784351593143-ma1o1e",
+      "timestamp": "2026-07-18T05:13:25.397886"
+    },
+    {
+      "id": "hist-8860bddb02fc",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "explain about LLMs and RAG?",
+      "response": "LLMs (Large Language Models) and RAGs (Retrieval-Augmented Generation) are related but distinct concepts in the field of natural language processing.\n\n### What are LLMs?\n\n* Large Language Models are a type of artificial intelligence designed to process and generate human-like language.\n* They are trained on vast amounts of text data, allowing them to learn patterns and relationships within language.\n* LLMs can be fine-tuned for specific tasks, such as language translation, text summarization, or conversational dialogue.\n\n### What are RAGs?\n\n* Retrieval-Augmented Generation models are a type of LLM that uses a combination of retrieval and generation techniques to produce high-quality responses.\n* RAGs use a separate retrieval model to search for relevant information in a large database or knowledge graph, and then use this information to inform the generation of a response.\n* This approach allows RAGs to leverage the strengths of both retrieval and generation, producing more accurate and informative responses.\n\n### How do LLMs and RAGs work together?\n\n* LLMs can be used to generate initial responses or prompts, which are then used to retrieve relevant information from a database or knowledge graph using a RAG.\n* The retrieved information is then used to refine and improve the generated response, resulting in a more accurate and informative final answer.\n\n### Benefits of RAGs\n\n* Improved accuracy and relevance of responses\n* Ability to handle complex and open-ended questions\n* Ability to incorporate external knowledge and information into the response\n\n### Challenges of RAGs\n\n* Requires large amounts of high-quality training data\n* Can be computationally expensive to train and deploy\n* Requires careful tuning and optimization of the retrieval and generation components.\n\n\n### Architecture Diagram\n```mermaid\ngraph TD\n    Q[User Query] --> E[Embedding Model]\n    E --> V[Vector Search]\n    V --> P[Pinecone/Vector DB]\n    P --> R[Top-K Results]\n    R --> RR[Reranker]\n    RR --> C[Context Assembly]\n    C --> LLM[LLM Generation]\n    LLM --> O[Final Answer]\n    \n    subgraph Retrieval\n        E --> V\n        V --> P\n        P --> R\n        R --> RR\n    end\n    \n    subgraph Generation\n        C --> LLM\n        LLM --> O\n    end\n```\n",
+      "route_type": "MANUAL_SAVE",
+      "execution_time_ms": 0,
+      "tokens_used": 0,
+      "conversation_id": "session-1784351593143-ma1o1e",
+      "timestamp": "2026-07-18T05:13:39.659235"
+    },
+    {
+      "id": "hist-86ac448d9beb",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "give me java code to find the longest subsequence without repeating characters?",
+      "response": "Here is the Java code to find the longest subsequence without repeating characters:\n\n```java\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class Main {\n    public static void main(String[] args) {\n        String s = \"abcabcbb\";\n        System.out.println(lengthOfLongestSubstring(s));\n    }\n\n    public static int lengthOfLongestSubstring(String s) {\n        int n = s.length();\n        int ans = 0;\n        Map<Character, Integer> map = new HashMap<>();\n        int left = 0;\n\n        for (int right = 0; right < n; right++) {\n            if (map.containsKey(s.charAt(right))) {\n                left = Math.max(left, map.get(s.charAt(right)) + 1);\n            }\n            map.put(s.charAt(right), right);\n            ans = Math.max(ans, right - left + 1);\n        }\n\n        return ans;\n    }\n}\n```\n\nThis code uses a sliding window approach with a hashmap to track the indices of characters. It adjusts the window to ensure that no character is repeated. The `lengthOfLongestSubstring` method returns the length of the longest substring without repeating characters.",
+      "route_type": "HYBRID_RAG",
+      "execution_time_ms": 49098.36,
+      "tokens_used": 101,
+      "conversation_id": "session-1784351788260-7vfzkg",
+      "timestamp": "2026-07-18T05:17:39.106339"
+    },
+    {
+      "id": "hist-e4af309cc872",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "give me java code to find the longest subsequence without repeating characters?",
+      "response": "Here is the Java code to find the longest subsequence without repeating characters:\n\n```java\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class Main {\n    public static void main(String[] args) {\n        String s = \"abcabcbb\";\n        System.out.println(lengthOfLongestSubstring(s));\n    }\n\n    public static int lengthOfLongestSubstring(String s) {\n        int n = s.length();\n        int ans = 0;\n        Map<Character, Integer> map = new HashMap<>();\n        int left = 0;\n\n        for (int right = 0; right < n; right++) {\n            if (map.containsKey(s.charAt(right))) {\n                left = Math.max(left, map.get(s.charAt(right)) + 1);\n            }\n            map.put(s.charAt(right), right);\n            ans = Math.max(ans, right - left + 1);\n        }\n\n        return ans;\n    }\n}\n```\n\nThis code uses a sliding window approach with a hashmap to track the indices of characters. It adjusts the window to ensure that no character is repeated. The `lengthOfLongestSubstring` method returns the length of the longest substring without repeating characters.",
+      "route_type": "MANUAL_SAVE",
+      "execution_time_ms": 0,
+      "tokens_used": 0,
+      "conversation_id": "session-1784351788260-7vfzkg",
+      "timestamp": "2026-07-18T05:17:49.476875"
+    },
+    {
+      "id": "hist-7c504d34ecd2",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "hi",
+      "response": "Hello. How can I assist you today?",
+      "route_type": "MEMORY_ENHANCED",
+      "execution_time_ms": 558.98,
+      "tokens_used": 90,
+      "conversation_id": "session-1784351959565-ti2ilw",
+      "timestamp": "2026-07-18T05:19:25.144155"
+    },
+    {
+      "id": "hist-2bfee61b30b6",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "wt r u dpoing",
+      "response": "I'm here to assist and provide information.",
+      "route_type": "MEMORY_ENHANCED",
+      "execution_time_ms": 949.73,
+      "tokens_used": 96,
+      "conversation_id": "session-1784351959565-ti2ilw",
+      "timestamp": "2026-07-18T05:19:34.791774"
+    },
+    {
+      "id": "hist-c5c9ee446fa4",
+      "user_id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "query": "explin lagchain",
+      "response": "Lagchain is a blockchain-based platform that focuses on lagging behind the current state of the network, rather than trying to keep up with it. This approach allows for a more decentralized and secure way of processing transactions.\n\nHere are some key aspects of how lagchain works:\n\n* **Decentralized network**: Lagchain is built on a decentralized network of nodes that work together to validate and record transactions.\n* **Lagging behind**: The platform uses a unique consensus algorithm that allows nodes to lag behind the current state of the network, rather than trying to keep up with it. This makes it more difficult for attackers to manipulate the network.\n* **Security**: Lagchain's decentralized and lagging approach makes it more secure than traditional blockchain platforms.\n* **Scalability**: The platform is designed to be highly scalable, allowing for a large number of transactions to be processed per second.\n* **Energy efficiency**: Lagchain uses a proof-of-stake consensus algorithm, which is more energy-efficient than proof-of-work algorithms used by other blockchain platforms.",
+      "route_type": "MEMORY_ENHANCED",
+      "execution_time_ms": 943.2,
+      "tokens_used": 80,
+      "conversation_id": "session-1784352024259-zm9rhb",
+      "timestamp": "2026-07-18T05:20:34.930130"
+    }
+  ]
+}

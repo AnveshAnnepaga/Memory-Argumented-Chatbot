@@ -5,6 +5,8 @@ Provides JWT-based authentication, password hashing, user management,
 and protected route dependencies for the Vyron Intelligence Engine.
 """
 import hashlib
+import json
+import os
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
@@ -183,6 +185,60 @@ def create_token_pair(user_id: str, email: str) -> tuple[str, str]:
 _users_db: Dict[str, UserInDB] = {}
 _email_to_id: Dict[str, str] = {}
 
+# JSON file persistence for user data across server restarts
+_USERS_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "data", "users.json")
+
+
+def _user_to_dict(u: UserInDB) -> dict:
+    d = u.model_dump()
+    for k in ("created_at", "updated_at", "last_login"):
+        if isinstance(d.get(k), datetime):
+            d[k] = d[k].isoformat()
+    return d
+
+
+def _dict_to_user(d: dict) -> UserInDB:
+    for k in ("created_at", "updated_at", "last_login"):
+        if isinstance(d.get(k), str):
+            try:
+                d[k] = datetime.fromisoformat(d[k])
+            except Exception:
+                d[k] = datetime.utcnow()
+    return UserInDB(**d)
+
+
+def _save_users_to_file() -> None:
+    try:
+        data = {
+            "users": {uid: _user_to_dict(u) for uid, u in _users_db.items()},
+            "email_to_id": dict(_email_to_id),
+        }
+        os.makedirs(os.path.dirname(_USERS_FILE), exist_ok=True)
+        with open(_USERS_FILE, "w") as f:
+            json.dump(data, f, indent=2, default=str)
+    except Exception as exc:
+        logger.warning(f"Failed to save users to file: {exc}")
+
+
+def _load_users_from_file() -> None:
+    try:
+        if not os.path.exists(_USERS_FILE):
+            return
+        with open(_USERS_FILE) as f:
+            data = json.load(f)
+        _users_db.clear()
+        _email_to_id.clear()
+        for uid, u_data in data.get("users", {}).items():
+            _users_db[uid] = _dict_to_user(u_data)
+        _email_to_id.update(data.get("email_to_id", {}))
+        logger.info(f"Loaded {len(_users_db)} users from file")
+    except Exception as exc:
+        logger.warning(f"Failed to load users from file: {exc}")
+
+
+# Load persisted users on startup
+_load_users_from_file()
+
 
 def _row_to_user_in_db(row: UserTable) -> UserInDB:
     """Map a UserTable ORM row to a UserInDB model."""
@@ -277,6 +333,7 @@ async def create_user(user_data: UserCreate, ip: Optional[str] = None, is_active
 
         _users_db[existing.id] = existing
         _email_to_id[user_data.email.lower()] = existing.id
+        _save_users_to_file()
         return existing
 
     user_id = generate_user_id()
@@ -314,6 +371,10 @@ async def create_user(user_data: UserCreate, ip: Optional[str] = None, is_active
             await session.commit()
             await session.refresh(row)
             logger.info(f"Created user in PostgreSQL: {user_id} ({user_data.email})")
+            # Always persist to in-memory fallback + file so user survives PG outage
+            _users_db[user_id] = user
+            _email_to_id[user_data.email.lower()] = user_id
+            _save_users_to_file()
             return user
         except Exception as exc:
             await session.rollback()
@@ -321,6 +382,7 @@ async def create_user(user_data: UserCreate, ip: Optional[str] = None, is_active
 
     _users_db[user_id] = user
     _email_to_id[user_data.email.lower()] = user_id
+    _save_users_to_file()
     logger.info(f"Created user in memory: {user_id} ({user_data.email})")
     return user
 
@@ -337,6 +399,11 @@ async def authenticate_user(email: str, password: str) -> Optional[UserInDB]:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account has been deactivated. Please register again with the same email to reactivate."
         )
+    # Sync PG user into in-memory fallback so it survives restart
+    if user.id not in _users_db:
+        _users_db[user.id] = user
+        _email_to_id[user.email.lower()] = user.id
+        _save_users_to_file()
     return user
 
 
@@ -354,13 +421,13 @@ async def update_last_login(user_id: str, ip: Optional[str] = None) -> None:
                 row.last_ip = ip
                 row.updated_at = now
                 await session.commit()
-                return
         except Exception as exc:
             logger.warning(f"DB update_last_login error, falling back to memory: {exc}")
     if user_id in _users_db:
         _users_db[user_id].last_login = now
         _users_db[user_id].last_ip = ip
         _users_db[user_id].updated_at = now
+    _save_users_to_file()
 
 
 async def change_password(user_id: str, current_password: str, new_password: str) -> bool:
@@ -384,15 +451,14 @@ async def change_password(user_id: str, current_password: str, new_password: str
                 row.password_hash = new_hash
                 row.updated_at = now
                 await session.commit()
-                return True
         except Exception as exc:
             logger.warning(f"DB change_password error, falling back to memory: {exc}")
 
     if user_id in _users_db:
         _users_db[user_id].hashed_password = new_hash
         _users_db[user_id].updated_at = now
-        return True
-    return False
+    _save_users_to_file()
+    return True
 
 
 async def deactivate_user(user_id: str) -> bool:
@@ -408,14 +474,13 @@ async def deactivate_user(user_id: str) -> bool:
                 row.is_active = False
                 row.updated_at = now
                 await session.commit()
-                return True
         except Exception as exc:
             logger.warning(f"DB deactivate_user error, falling back to memory: {exc}")
     if user_id in _users_db:
         _users_db[user_id].is_active = False
         _users_db[user_id].updated_at = now
-        return True
-    return False
+    _save_users_to_file()
+    return True
 
 
 # ============================================================
@@ -448,6 +513,12 @@ async def get_current_user(
             detail="User not found",
             headers={"WWW-Authenticate": "Bearer"}
         )
+
+    # Sync to in-memory fallback so user survives restart without PG
+    if user.id not in _users_db:
+        _users_db[user.id] = user
+        _email_to_id[user.email.lower()] = user.id
+        _save_users_to_file()
 
     if not user.is_active:
         raise HTTPException(

@@ -412,7 +412,7 @@ async def prompt_builder_node(state: WorkflowState) -> Dict[str, Any]:
         "- 'Explain how/why X works' or concept questions: short intro paragraph followed by 3-6 bullet points.\n"
         "- 'Compare X and Y': short table or 'X: ... | Y: ...' bullets.\n"
         "- 'List...' / 'Give me examples of...' / 'Steps to...' / 'How to...': numbered or bulleted list.\n"
-        "- Code/programming questions: a working code block plus a one-line explanation.\n"
+        "- Code/programming questions: a working code block with proper 4-space indentation plus a one-line explanation.\n"
         "- Math/calculation questions: expression, result, one-line note.\n"
         "- Real-time data (weather/time/currency): values formatted cleanly.\n"
         "If supporting context is provided below, use it silently but do NOT cite it, do NOT say where the answer came from, and do NOT mention retrieval or tools.\n\n"
@@ -435,7 +435,11 @@ async def prompt_builder_node(state: WorkflowState) -> Dict[str, Any]:
         "directly from the provided memory context. Do NOT confuse prepositions in their question "
         "(e.g., 'from', 'in', 'at') with their actual name or data.\n"
         "6. IMPORTANT - When you need current information, use the web_search function tool. "
-        "Do NOT guess years, dates, prices, scores, leaders, or any data that changes over time."
+        "Do NOT guess years, dates, prices, scores, leaders, or any data that changes over time.\n"
+        "7. CODE QUALITY - When writing code, always use proper 4-space indentation (not 1 space). "
+        "Include all required syntax like parentheses () and brackets [] in every line. "
+        "Never truncate or abbreviate code. Every function definition, loop, assignment, and method "
+        "call must have complete, correct syntax."
     )
 
     if final_context and final_context.strip() and "[Engine Offline" not in final_context:

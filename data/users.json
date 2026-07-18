@@ -1,0 +1,19 @@
+{
+  "users": {
+    "usr_HwrOijx2T5pzUWtVTq3HLw": {
+      "id": "usr_HwrOijx2T5pzUWtVTq3HLw",
+      "email": "commonwealth388@gmail.com",
+      "full_name": "Anvesh",
+      "hashed_password": "$2b$12$CCtcM0FLWc0dcIVVbXCyVejTrpTBAsmCJ6dygOan6Pb2zegC8SAJe",
+      "is_active": true,
+      "is_verified": false,
+      "created_at": "2026-07-18T04:27:18.542313",
+      "updated_at": "2026-07-18T04:27:18.542313",
+      "last_login": null,
+      "last_ip": null
+    }
+  },
+  "email_to_id": {
+    "commonwealth388@gmail.com": "usr_HwrOijx2T5pzUWtVTq3HLw"
+  }
+}
