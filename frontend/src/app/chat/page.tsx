@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
 import ChatMessageRenderer from "@/components/ChatMessageRenderer";
@@ -38,6 +38,14 @@ interface ChatMessage {
 }
 
 export default function ChatStudioPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+      <ChatStudioContent />
+    </Suspense>
+  );
+}
+
+function ChatStudioContent() {
   const searchParams = useSearchParams();
   const { token, authUser, conversationSaveCount, incrementConversationSaveCount } = useAppStore();
   const [conversationId, setConversationId] = useState(searchParams.get("conversation") || generateSessionId());
@@ -578,7 +586,7 @@ export default function ChatStudioPage() {
 
                 {/* Send button */}
                 <button
-                  onClick={handleSendMessage}
+                  onClick={() => handleSendMessage()}
                   disabled={isGenerating || (!inputQuery.trim() && uploadedFiles.length === 0)}
                   className="w-10 h-10 flex-shrink-0 bg-primary-container text-on-primary-container rounded-xl flex items-center justify-center shadow-lg shadow-primary-container/20 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
