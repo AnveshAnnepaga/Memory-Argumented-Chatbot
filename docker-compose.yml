@@ -1,11 +1,10 @@
 version: '3.8'
 
 services:
-  # FastAPI Backend Service
   backend:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: Dockerfile
     container_name: antigravity_backend
     restart: always
     env_file:
@@ -13,19 +12,11 @@ services:
         required: true
     environment:
       - ENVIRONMENT=production
-      - POSTGRES_URL=${POSTGRES_URL}
-      - NEO4J_URI=${NEO4J_URI}
-      - NEO4J_USER=${NEO4J_USER}
-      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
-      - PINECONE_API_KEY=${PINECONE_API_KEY}
     ports:
       - "8000:8000"
     networks:
       - antigravity_net
 
-  # Next.js 15 Frontend
   frontend:
     build:
       context: ./frontend
@@ -42,7 +33,6 @@ services:
     networks:
       - antigravity_net
 
-  # NGINX Reverse Proxy
   nginx:
     image: nginx:alpine
     container_name: antigravity_nginx
