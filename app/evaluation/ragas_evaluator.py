@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 logger = logging.getLogger("app.evaluation.ragas")
 
 try:
-    from ragas.metrics import (
+    from ragas.metrics.collections import (
         faithfulness,
         answer_relevancy,
         context_precision,
@@ -14,8 +14,19 @@ try:
     from datasets import Dataset
     _RAGAS_AVAILABLE = True
 except ImportError:
-    _RAGAS_AVAILABLE = False
-    logger.info("RAGAS not installed; falling back to heuristic RAG metrics.")
+    try:
+        from ragas.metrics import (
+            faithfulness,
+            answer_relevancy,
+            context_precision,
+            context_recall,
+        )
+        from ragas.llms import LlmWrapper
+        from datasets import Dataset
+        _RAGAS_AVAILABLE = True
+    except ImportError:
+        _RAGAS_AVAILABLE = False
+        logger.info("RAGAS not installed; falling back to heuristic RAG metrics.")
 
 try:
     from app.ai.llm.llm_manager import llm_manager

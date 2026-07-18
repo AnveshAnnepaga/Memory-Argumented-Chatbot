@@ -179,6 +179,19 @@ class EvaluationConfig(BaseModel):
     completion_cost_per_1m_tokens_usd: float = Field(default=0.80, ge=0.0, description="USD cost per 1M completion tokens")
 
 
+class GuardrailsConfig(BaseModel):
+    """Safety guardrails configuration for input/output validation."""
+    enabled: bool = True
+    block_injection: bool = True
+    block_harmful: bool = True
+    block_pii_input: bool = False
+    block_offensive_output: bool = True
+    redact_pii_output: bool = True
+    max_input_length: int = 8192
+    max_output_length: int = 8192
+    rate_limit_per_minute: int = 60
+    rate_limit_per_hour: int = 1000
+
 
 class PostgresConfig(BaseModel):
     """PostgreSQL relational database settings."""
@@ -332,6 +345,18 @@ class Settings(BaseSettings):
     EVAL_PROMPT_COST_PER_1M_TOKENS: float = 0.50
     EVAL_COMPLETION_COST_PER_1M_TOKENS: float = 0.80
 
+    # Guardrails
+    GUARDRAILS_ENABLED: bool = True
+    GUARDRAILS_BLOCK_INJECTION: bool = True
+    GUARDRAILS_BLOCK_HARMFUL: bool = True
+    GUARDRAILS_BLOCK_PII_INPUT: bool = False
+    GUARDRAILS_BLOCK_OFFENSIVE_OUTPUT: bool = True
+    GUARDRAILS_REDACT_PII_OUTPUT: bool = True
+    GUARDRAILS_MAX_INPUT_LENGTH: int = 8192
+    GUARDRAILS_MAX_OUTPUT_LENGTH: int = 8192
+    GUARDRAILS_RATE_LIMIT_PER_MINUTE: int = 60
+    GUARDRAILS_RATE_LIMIT_PER_HOUR: int = 1000
+
     # Storage Databases
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = DEFAULT_POSTGRES_PORT
@@ -374,6 +399,7 @@ class Settings(BaseSettings):
     memory: Optional[MemoryConfig] = None
     tools: Optional[ToolsConfig] = None
     evaluation: Optional[EvaluationConfig] = None
+    guardrails: Optional[GuardrailsConfig] = None
     storage: Optional[StorageConfig] = None
     logging: Optional[LoggingConfig] = None
 
@@ -460,6 +486,18 @@ class Settings(BaseSettings):
             deepeval_enabled=self.DEEPEVAL_ENABLED,
             prompt_cost_per_1m_tokens_usd=self.EVAL_PROMPT_COST_PER_1M_TOKENS,
             completion_cost_per_1m_tokens_usd=self.EVAL_COMPLETION_COST_PER_1M_TOKENS,
+        )
+        self.guardrails = GuardrailsConfig(
+            enabled=self.GUARDRAILS_ENABLED,
+            block_injection=self.GUARDRAILS_BLOCK_INJECTION,
+            block_harmful=self.GUARDRAILS_BLOCK_HARMFUL,
+            block_pii_input=self.GUARDRAILS_BLOCK_PII_INPUT,
+            block_offensive_output=self.GUARDRAILS_BLOCK_OFFENSIVE_OUTPUT,
+            redact_pii_output=self.GUARDRAILS_REDACT_PII_OUTPUT,
+            max_input_length=self.GUARDRAILS_MAX_INPUT_LENGTH,
+            max_output_length=self.GUARDRAILS_MAX_OUTPUT_LENGTH,
+            rate_limit_per_minute=self.GUARDRAILS_RATE_LIMIT_PER_MINUTE,
+            rate_limit_per_hour=self.GUARDRAILS_RATE_LIMIT_PER_HOUR,
         )
         sql_cfg = PostgresConfig(
             host=self.POSTGRES_HOST,

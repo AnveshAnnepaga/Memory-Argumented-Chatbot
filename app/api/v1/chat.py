@@ -24,6 +24,9 @@ from app.core.security import (
     UserInDB,
     audit_log,
 )
+from app.core.config import settings
+from app.ai.validator.validator import guardrail_validator
+from app.ai.validator.rate_limiter import check_rate_limit
 
 logger = logging.getLogger("app.api.v1.chat")
 router = APIRouter(tags=["Chat"])
@@ -793,6 +796,33 @@ async def process_chat_query(
     
     logger.info(f"Chat API processing query: '{payload.query[:50]}...' [Session: {conversation_id}, User: {user_id}]")
     
+    # Guardrail: Validate input safety
+    if settings.guardrails and settings.guardrails.enabled:
+        input_check = guardrail_validator.validate_input(payload.query)
+        if not input_check.passed:
+            logger.warning(f"Input guardrail blocked query: {input_check.reason}")
+            return success_response(
+                data={"response": "I apologize, but I'm unable to process this request. Please rephrase your query and try again.", "guardrail_triggered": True, "reason": input_check.reason},
+                message="Request blocked by safety guardrails",
+                request_id=request_id,
+            )
+        logger.debug(f"Input passed guardrails: {input_check.details}")
+    
+    # Rate limiting
+    if settings.guardrails and settings.guardrails.enabled:
+        rate_check = check_rate_limit(
+            user_id,
+            per_minute=settings.guardrails.rate_limit_per_minute,
+            per_hour=settings.guardrails.rate_limit_per_hour
+        )
+        if not rate_check.allowed:
+            logger.warning(f"Rate limit exceeded for user {user_id}: {rate_check.limit_type} limit")
+            return success_response(
+                data={"response": "Too many requests. Please wait before trying again.", "rate_limited": True, "retry_after_seconds": int(rate_check.reset_in_seconds)},
+                message="Rate limit exceeded",
+                request_id=request_id,
+            )
+    
     # Load file attachments if any
     attachment_context = await _load_file_attachments(payload.file_ids or [], payload.image_ids or [])
     enriched_query = payload.query
@@ -805,6 +835,16 @@ async def process_chat_query(
         conversation_id=conversation_id,
         user_id=user_id
     )
+    
+    # Guardrail: Validate output safety
+    if settings.guardrails and settings.guardrails.enabled and result.response:
+        output_check = guardrail_validator.validate_output(result.response)
+        if not output_check.passed:
+            logger.warning(f"Output guardrail blocked response: {output_check.reason}")
+            result.response = "I apologize, but I'm unable to provide that response. Please try a different query."
+        else:
+            result.response = output_check.filtered_output
+            logger.debug(f"Output passed guardrails: {output_check.details}")
     
     public_payload = _public_chat_payload(result, original_query=payload.query)
     
@@ -849,6 +889,28 @@ async def stream_chat_query(
     
     logger.info(f"SSE Chat API streaming query: '{payload.query[:50]}...' [Session: {conversation_id}, User: {user_id}]")
     
+    # Guardrail: Validate input safety before processing
+    if settings.guardrails and settings.guardrails.enabled:
+        input_check = guardrail_validator.validate_input(payload.query)
+        if not input_check.passed:
+            logger.warning(f"SSE Input guardrail blocked query: {input_check.reason}")
+            async def blocked_generator() -> AsyncGenerator[str, None]:
+                yield "event: error\ndata: " + json.dumps({"error": "Request blocked by safety guardrails", "reason": input_check.reason}) + "\n\n"
+            return StreamingResponse(blocked_generator(), media_type="text/event-stream")
+    
+    # Rate limiting
+    if settings.guardrails and settings.guardrails.enabled:
+        rate_check = check_rate_limit(
+            user_id,
+            per_minute=settings.guardrails.rate_limit_per_minute,
+            per_hour=settings.guardrails.rate_limit_per_hour
+        )
+        if not rate_check.allowed:
+            logger.warning(f"SSE Rate limit exceeded for user {user_id}: {rate_check.limit_type} limit")
+            async def rate_limited_generator() -> AsyncGenerator[str, None]:
+                yield "event: error\ndata: " + json.dumps({"error": "Rate limit exceeded", "retry_after_seconds": int(rate_check.reset_in_seconds)}) + "\n\n"
+            return StreamingResponse(rate_limited_generator(), media_type="text/event-stream")
+    
     attachment_context = await _load_file_attachments(payload.file_ids or [], payload.image_ids or [])
     enriched_query = payload.query
     if attachment_context:
@@ -868,6 +930,15 @@ async def stream_chat_query(
                 conversation_id=conversation_id,
                 user_id=user_id
             )
+            
+            # Guardrail: Validate output safety
+            if settings.guardrails and settings.guardrails.enabled and result.response:
+                output_check = guardrail_validator.validate_output(result.response)
+                if not output_check.passed:
+                    logger.warning(f"SSE Output guardrail blocked response: {output_check.reason}")
+                    result.response = "I apologize, but I'm unable to provide that response. Please try a different query."
+                else:
+                    result.response = output_check.filtered_output
             
             yield "event: step\ndata: " + json.dumps({
                 "node": "routing",

@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "workspaces": [
+    {
+      "name": "frontend",
+      "slug": "frontend",
+      "root": "frontend/"
+    }
+  ]
+}
