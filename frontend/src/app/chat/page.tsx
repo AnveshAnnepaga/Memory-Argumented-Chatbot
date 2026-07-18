@@ -584,7 +584,7 @@ function ChatStudioContent() {
                 {/* Audio recorder */}
                 
 
-                {/* Send button */}
+{/* Send button */}
                 <button
                   onClick={() => handleSendMessage()}
                   disabled={isGenerating || (!inputQuery.trim() && uploadedFiles.length === 0)}
