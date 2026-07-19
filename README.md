@@ -1,7 +1,6 @@
-# 🚀 Antigravity Intelligence Engine (Production v15.0)
+# 🚀 Vyron AI
 
-**Designed, Architected, and Full-Stack Engineered by [Anvesh Mishra](https://github.com/anvesh-01)**  
-*An enterprise-grade, modular, and decoupled AI Assistant Platform built across 15 rigorous verification milestones.*
+Vyron AI is an intelligent, modular, and decoupled AI Assistant Platform. It seamlessly integrates long-term memory, knowledge graph reasoning, and real-time data retrieval to provide context-aware, highly accurate responses in a lightning-fast modern interface.
 
 **🌍 Live Demo:** [https://vyronai-six.vercel.app](https://vyronai-six.vercel.app)
 
@@ -9,7 +8,7 @@
 
 ## 🌟 Executive Summary & Architectural Philosophy
 
-The **Antigravity Intelligence Engine** represents the convergence of high-performance asynchronous API backend systems (`FastAPI`), stateful conditional graph orchestration (`LangGraph StateGraph`), dense & sparse vector retrieval (`Pinecone + BM25 Hybrid RAG`), multi-hop knowledge graph reasoning (`Neo4j GraphRAG`), persistent long-term episodic/semantic memory (`PostgreSQL`), and modern glassmorphism cyber UI engineering (`Next.js 15 App Router`).
+**Vyron AI** represents the convergence of high-performance asynchronous API backend systems (`FastAPI`), stateful conditional graph orchestration (`LangGraph StateGraph`), dense & sparse vector retrieval (`Pinecone + BM25 Hybrid RAG`), multi-hop knowledge graph reasoning (`Neo4j GraphRAG`), persistent long-term episodic/semantic memory (`PostgreSQL`), and modern glassmorphism cyber UI engineering (`Next.js 15 App Router`).
 
 ### Core Design Guarantees:
 1. **Zero Architectural Coupling**: Every intelligence module (`RAG`, `GraphRAG`, `Memory`, `Tools`, `Evaluation`) operates as an independent, standalone service layer communicating through structured contracts and Pydantic V2 schemas.
@@ -77,7 +76,7 @@ graph TD
 
 ---
 
-## 🧭 Project Roadmap & Completed Milestones (15 / 15 Verified)
+## 🧭 Project Roadmap & Completed Milestones
 
 - ✅ **Milestone 1**: FastAPI Backend Architecture, Configuration Layer & Exception Handling
 - ✅ **Milestone 2**: Infrastructure & Database Connections (`asyncpg`, `motor`, `Neo4j`, PaaS `DATABASE_URL` routing)
@@ -146,8 +145,8 @@ docker compose up -d --build
 ### Services & Port Mapping:
 - **NGINX Reverse Proxy**: `http://localhost` (Port `80`) — Routes `/api/v1/*` with SSE unbuffered streaming & `/` to frontend.
 - **Next.js Standalone Frontend**: Port `3000` (Internal Docker network / exposed for testing).
-- **FastAPI Asynchronous Backend**: Port `8000` (4 Uvicorn worker processes under non-root user `backenduser:1000`).
-- **PostgreSQL 16 Database**: Port `5432` (`antigravity_db`).
+- **FastAPI Asynchronous Backend**: Port `8000` (4 Uvicorn worker processes).
+- **PostgreSQL 16 Database**: Port `5432` (`vyron_db`).
 - **Neo4j 5 Knowledge Graph**: Port `7474` (Browser UI) & Port `7687` (Bolt binary protocol).
 
 ---
@@ -157,10 +156,10 @@ docker compose up -d --build
 The project includes automated GitHub Actions CI/CD workflows (`.github/workflows/deploy.yml`) executing on every commit:
 1. **Python Contract Verification**: Runs `python scratch/test_frontend_api_contract.py` using FastAPI `TestClient` to ensure OpenAPI schemas match frontend requirements.
 2. **Next.js Production Compilation**: Executes `npm run build` inside `frontend/` verifying zero TypeScript or React compilation errors.
-3. **Docker Multi-Stage Integrity Check**: Verifies image builds for `antigravity-backend:test` and `antigravity-frontend:test`.
+3. **Docker Multi-Stage Integrity Check**: Verifies image builds for the backend and frontend modules.
 
 ---
 
-## 📄 License & Attribution
+## 📄 License
 
-Copyright © 2026 **Anvesh Mishra**. Engineered as part of the advanced agentic coding architecture program. All rights reserved.
+Copyright © 2026. All rights reserved.
