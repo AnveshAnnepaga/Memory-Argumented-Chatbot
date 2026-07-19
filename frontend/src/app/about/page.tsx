@@ -32,8 +32,8 @@ export default function AboutPage() {
 
         {/* Hero card */}
         <div className="glass-card w-full p-8 rounded-2xl border border-outline-variant/20 text-center">
-          <div className="w-20 h-20 rounded-2xl bg-primary-container mx-auto flex items-center justify-center mb-5 shadow-xl shadow-primary-container/20 overflow-hidden">
-            <img src="/vyron-logo.png" alt="Vyron AI" className="w-12 h-12 object-contain" />
+          <div className="w-24 h-24 mx-auto flex items-center justify-center mb-5 overflow-hidden">
+            <img src="/vyron-logo.png" alt="Vyron AI" className="w-full h-full object-contain rounded-2xl" />
           </div>
           <h3 className="text-2xl font-black text-on-surface mb-2 tracking-tight">Vyron AI</h3>
           <p className="text-[14px] text-primary font-mono mb-4">v1.0.0-backend-intelligence · Production Release</p>

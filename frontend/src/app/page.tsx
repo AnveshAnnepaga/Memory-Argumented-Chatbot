@@ -9,8 +9,8 @@ export default function HomePage() {
     <div className="bg-background text-on-surface min-h-screen flex flex-col font-body-md overflow-x-hidden w-full">
       <header className="sticky top-0 z-50 h-20 bg-background/80 backdrop-blur-md border-b border-outline-variant/20 flex items-center justify-between px-6 sm:px-12 w-full">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center shadow-lg shadow-primary-container/20 flex-shrink-0 overflow-hidden">
-            <img src="/vyron-logo.png" alt="Vyron" className="w-7 h-7 object-contain" />
+          <div className="w-12 h-12 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src="/vyron-logo.png" alt="Vyron" className="w-full h-full object-contain rounded-lg" />
           </div>
           <span className="text-[18px] font-bold text-primary tracking-tight">Vyron AI</span>
         </div>

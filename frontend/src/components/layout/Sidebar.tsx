@@ -31,11 +31,11 @@ export function Sidebar() {
     <nav className="w-64 flex-shrink-0 h-full flex flex-col py-4 px-3 gap-1 bg-surface-container-low border-r border-outline-variant/20 overflow-y-auto custom-scrollbar">
       {/* Brand */}
       <div className="flex items-center gap-3 mb-4 px-2 py-2">
-        <div className="w-9 h-9 rounded-xl bg-primary-container flex items-center justify-center shadow-lg shadow-primary-container/20 flex-shrink-0 overflow-hidden">
+        <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 overflow-hidden">
           <img
             src="/vyron-logo.png"
             alt="Vyron"
-            className="w-6 h-6 object-contain"
+            className="w-full h-full object-contain rounded-lg"
           />
         </div>
         <div className="flex flex-col min-w-0">

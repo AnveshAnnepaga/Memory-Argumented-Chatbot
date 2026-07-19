@@ -44,8 +44,8 @@ export function AuthModal() {
         <div className="px-6 pt-6 pb-4 border-b border-outline-variant/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center shadow-lg shadow-primary-container/20 overflow-hidden">
-                <img src="/vyron-logo.png" alt="Vyron" className="w-6 h-6 object-contain" />
+              <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
+                <img src="/vyron-logo.png" alt="Vyron" className="w-full h-full object-contain rounded-lg" />
               </div>
               <span className="text-[18px] font-black text-primary tracking-tight">Vyron AI</span>
             </div>
