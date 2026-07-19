@@ -12,7 +12,7 @@ from dataclasses import dataclass
 logger = logging.getLogger("app.ai.validator.content_filter")
 
 OFFENSIVE_PATTERNS = [
-    (r"(?i)\b(hate|slur|discriminate)\b", "DISCRIMINATION"),
+    (r"(?i)\b(slur|discriminate)\b", "DISCRIMINATION"),
     (r"(?i)\b(kill|murder|assassinate)\b", "VIOLENCE"),
     (r"(?i)\b(threaten|intimidate|extort)\b", "THREAT"),
 ]

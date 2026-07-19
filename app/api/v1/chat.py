@@ -650,6 +650,7 @@ async def _load_file_attachments(file_ids: List[str], image_ids: List[str]) -> s
     from app.repositories.postgres.document_file_repository import DocumentFileRepository as _FileRepo
     all_ids = list(set(file_ids + image_ids))
     context_parts = []
+    seen_texts = set()
 
     async for session in postgres_manager.get_session():
         repo = _FileRepo(session=session)
@@ -659,16 +660,25 @@ async def _load_file_attachments(file_ids: List[str], image_ids: List[str]) -> s
                 if not doc_file:
                     continue
                 text = doc_file.extracted_text or ""
-                if text:
-                    header = f"[Attachment: {doc_file.filename} ({doc_file.mime_type})]"
-                    context_parts.append(f"{header}\n{text[:5000]}")
-            except Exception as e:
-                logger.debug(f"Failed to load attachment {fid}: {e}")
-        break
+                if not text:
+                    continue
+                
+                # Truncate extremely large texts just in case (e.g., limit each file to ~15k chars)
+                text = text[:15000]
 
-    if context_parts:
-        return "\n\n---\n\n".join(context_parts)
-    return ""
+                if text in seen_texts:
+                    continue
+                seen_texts.add(text)
+
+                context_parts.append(f"[Attachment: {doc_file.filename} ({doc_file.mime_type})]\n{text}")
+            except Exception as e:
+                logger.error(f"Failed to load attachment {fid}: {e}")
+        break  # Just need one DB session
+
+    if not context_parts:
+        return ""
+    
+    return "\n\n---\n\n".join(context_parts)
 
 
 async def store_chat_history(
@@ -825,16 +835,15 @@ async def process_chat_query(
     
     # Load file attachments if any
     attachment_context = await _load_file_attachments(payload.file_ids or [], payload.image_ids or [])
-    enriched_query = payload.query
     if attachment_context:
-        enriched_query = f"I have uploaded the following files. Please use their contents to answer my question.\n\n{attachment_context}\n\n---\n\nMy question: {payload.query}"
-        logger.info(f"Enriched query with {len(payload.file_ids or []) + len(payload.image_ids or [])} attachment(s)")
+        logger.info(f"Loaded {len(payload.file_ids or []) + len(payload.image_ids or [])} attachment(s) for context")
 
     try:
         result: WorkflowResponse = await orchestration_pipeline.process_query(
-            user_query=enriched_query,
+            user_query=payload.query,
             conversation_id=conversation_id,
-            user_id=user_id
+            user_id=user_id,
+            file_context=attachment_context
         )
     except Exception as process_exc:
         logger.error(f"Chat processing failed: {type(process_exc).__name__}: {process_exc}", exc_info=True)
@@ -920,9 +929,6 @@ async def stream_chat_query(
             return StreamingResponse(rate_limited_generator(), media_type="text/event-stream")
     
     attachment_context = await _load_file_attachments(payload.file_ids or [], payload.image_ids or [])
-    enriched_query = payload.query
-    if attachment_context:
-        enriched_query = f"I have uploaded the following files. Please use their contents to answer my question.\n\n{attachment_context}\n\n---\n\nMy question: {payload.query}"
     
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
@@ -936,9 +942,10 @@ async def stream_chat_query(
             # Start background task to allow for keep-alive pings preventing 502 proxy timeouts
             task = asyncio.create_task(
                 orchestration_pipeline.process_query(
-                    user_query=enriched_query,
+                    user_query=payload.query,
                     conversation_id=conversation_id,
-                    user_id=user_id
+                    user_id=user_id,
+                    file_context=attachment_context
                 )
             )
             

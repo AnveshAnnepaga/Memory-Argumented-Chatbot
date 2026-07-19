@@ -46,7 +46,7 @@ class ToolRouter:
         self._compiled_rules = [
             (
                 ROUTE_WEATHER,
-                re.compile(r"\b(weather|temperature|forecast|rain|cloudy|sunny|humidity|wind speed)\b", re.IGNORECASE)
+                re.compile(r"\b(weather|wheather|temperature|forecast|rain|cloudy|sunny|humidity|wind speed)\b", re.IGNORECASE)
             ),
             (
                 ROUTE_UNIT,
@@ -74,7 +74,7 @@ class ToolRouter:
             ),
             (
                 ROUTE_WEB_SEARCH,
-                re.compile(r"\b(search\s+the\s+web|latest\s+news|web\s+search|who\s+won|current\s+events|google|search\s+online|search\s+for|find\s+information)\b", re.IGNORECASE)
+                re.compile(r"\b(search\s+the\s+web|latest\s+news|web\s+search|who\s+won|current\s+events|google|search\s+online|search\s+for|find\s+information|startup|startups|company|organization|firm|business|product)\b", re.IGNORECASE)
             ),
             # ── Roles / Positions ──
             (

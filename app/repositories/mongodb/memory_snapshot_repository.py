@@ -17,7 +17,7 @@ class MemorySnapshotRepository(BaseRepository[MemorySnapshot]):
         super().__init__(domain_model_class=MemorySnapshot, repository_name="MemorySnapshotRepository")
         self.db = db
         self.collection_name = "memory_snapshots"
-        self._memory_store: Dict[str, MemorySnapshot] = {}
+        self._memory_store: Dict[str, MemorySnapshot] = self._load_mock_data()
 
     def _get_coll(self) -> Any:
         active_db = self.db or mongo_manager.get_db()
@@ -33,6 +33,7 @@ class MemorySnapshotRepository(BaseRepository[MemorySnapshot]):
         coll = self._get_coll()
         if coll is None:
             self._memory_store[entity.id] = entity
+            self._save_mock_data(self._memory_store)
             return entity
 
         payload = entity.model_dump()
@@ -74,6 +75,7 @@ class MemorySnapshotRepository(BaseRepository[MemorySnapshot]):
             updated_dict.update(data)
             updated = MemorySnapshot.model_validate(updated_dict)
             self._memory_store[entity_id] = updated
+            self._save_mock_data(self._memory_store)
             return updated
 
         result = await coll.update_one(
@@ -88,7 +90,10 @@ class MemorySnapshotRepository(BaseRepository[MemorySnapshot]):
     async def delete(self, entity_id: str) -> bool:
         coll = self._get_coll()
         if coll is None:
-            return self._memory_store.pop(entity_id, None) is not None
+            popped = self._memory_store.pop(entity_id, None)
+            if popped:
+                self._save_mock_data(self._memory_store)
+            return popped is not None
 
         result = await coll.delete_one({"$or": [{"_id": entity_id}, {"id": entity_id}]})
         return result.deleted_count > 0

@@ -31,7 +31,7 @@ class EvaluationRepository(BaseRepository[EvaluationResult]):
     def __init__(self, session: Optional[AsyncSession] = None):
         super().__init__(domain_model_class=EvaluationResult, repository_name="EvaluationRepository")
         self.session = session
-        self._memory_store: Dict[str, EvaluationResult] = {}
+        self._memory_store: Dict[str, EvaluationResult] = self._load_mock_data()
 
     def _is_stub(self) -> bool:
         return self.session is None and (postgres_manager.stub_mode or postgres_manager.session_factory is None)
@@ -46,6 +46,7 @@ class EvaluationRepository(BaseRepository[EvaluationResult]):
         active_session = session or self.session
         if self._is_stub() or not active_session:
             self._memory_store[entity.id] = entity
+            self._save_mock_data(self._memory_store)
             return entity
 
         row = EvaluationResultTable(
@@ -84,6 +85,7 @@ class EvaluationRepository(BaseRepository[EvaluationResult]):
             updated_dict.update(data)
             updated_eval = EvaluationResult.model_validate(updated_dict)
             self._memory_store[entity_id] = updated_eval
+            self._save_mock_data(self._memory_store)
             return updated_eval
 
         stmt = select(EvaluationResultTable).where(EvaluationResultTable.id == entity_id)
@@ -125,7 +127,10 @@ class EvaluationRepository(BaseRepository[EvaluationResult]):
     async def delete(self, entity_id: str, session: Optional[AsyncSession] = None) -> bool:
         active_session = session or self.session
         if self._is_stub() or not active_session:
-            return self._memory_store.pop(entity_id, None) is not None
+            popped = self._memory_store.pop(entity_id, None)
+            if popped:
+                self._save_mock_data(self._memory_store)
+            return popped is not None
 
         stmt = select(EvaluationResultTable).where(EvaluationResultTable.id == entity_id)
         result = await active_session.execute(stmt)

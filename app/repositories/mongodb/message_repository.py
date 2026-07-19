@@ -17,7 +17,7 @@ class MessageRepository(BaseRepository[Message]):
         super().__init__(domain_model_class=Message, repository_name="MessageRepository")
         self.db = db
         self.collection_name = "messages"
-        self._memory_store: Dict[str, Message] = {}
+        self._memory_store: Dict[str, Message] = self._load_mock_data()
 
     def _get_coll(self) -> Any:
         active_db = self.db or mongo_manager.get_db()
@@ -30,6 +30,7 @@ class MessageRepository(BaseRepository[Message]):
         if coll is None:
             for m in messages:
                 self._memory_store[m.id] = m
+            self._save_mock_data(self._memory_store)
             return messages
 
         payloads = []
@@ -72,6 +73,7 @@ class MessageRepository(BaseRepository[Message]):
             updated_dict.update(data)
             updated = Message.model_validate(updated_dict)
             self._memory_store[entity_id] = updated
+            self._save_mock_data(self._memory_store)
             return updated
 
         result = await coll.update_one(
@@ -87,7 +89,10 @@ class MessageRepository(BaseRepository[Message]):
         """Delete message by ID (`Delete messages`)."""
         coll = self._get_coll()
         if coll is None:
-            return self._memory_store.pop(entity_id, None) is not None
+            popped = self._memory_store.pop(entity_id, None)
+            if popped:
+                self._save_mock_data(self._memory_store)
+            return popped is not None
 
         result = await coll.delete_one({"$or": [{"_id": entity_id}, {"id": entity_id}]})
         return result.deleted_count > 0
@@ -100,6 +105,8 @@ class MessageRepository(BaseRepository[Message]):
             to_remove = [k for k, v in self._memory_store.items() if v.conversation_id == conversation_id]
             for k in to_remove:
                 del self._memory_store[k]
+            if to_remove:
+                self._save_mock_data(self._memory_store)
             return len(to_remove)
 
         result = await coll.delete_many({"conversation_id": conversation_id})

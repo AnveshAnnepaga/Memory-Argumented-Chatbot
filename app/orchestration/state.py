@@ -32,6 +32,7 @@ class WorkflowState(TypedDict, total=False):
     router_decision: Optional[Dict[str, Any]]
 
     # Retrieval Context Payloads
+    file_context: str
     retrieved_rag_context: str
     retrieved_graph_context: str
     retrieved_memory_context: str
@@ -53,7 +54,8 @@ class WorkflowState(TypedDict, total=False):
 def create_initial_state(
     user_query: str,
     conversation_id: str = "default",
-    user_id: str = "default"
+    user_id: str = "default",
+    file_context: str = ""
 ) -> WorkflowState:
     """
     Factory helper to initialize a clean, serializable LangGraph workflow state dictionary.
@@ -65,6 +67,7 @@ def create_initial_state(
         "user_id": user_id,
         "intent": None,
         "router_decision": None,
+        "file_context": file_context,
         "retrieved_rag_context": "",
         "retrieved_graph_context": "",
         "retrieved_memory_context": "",

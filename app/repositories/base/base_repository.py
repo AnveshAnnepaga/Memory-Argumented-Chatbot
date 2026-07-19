@@ -3,6 +3,8 @@ import functools
 import logging
 import time
 from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar
+import json
+import os
 from pydantic import BaseModel
 from app.core.exceptions import (
     DatabaseException,
@@ -111,3 +113,28 @@ class BaseRepository(ICrudRepository[T]):
     def paginate(self, items: List[T], total: int, skip: int, limit: int) -> PaginatedResult[T]:
         """Helper to wrap results in standard PaginatedResult container."""
         return PaginatedResult(items=items, total=total, skip=skip, limit=limit)
+
+    def _get_mock_file_path(self) -> str:
+        os.makedirs(".mock_db", exist_ok=True)
+        return f".mock_db/{self.repository_name.lower()}.json"
+
+    def _load_mock_data(self) -> Dict[str, T]:
+        path = self._get_mock_file_path()
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                # Map plain dicts directly back to domain models, bypassing ORM mappers
+                return {k: self.domain_model_class.model_validate(v) for k, v in data.items()}
+            except Exception as e:
+                logger.warning(f"Failed to load mock data for {self.repository_name}: {e}")
+        return {}
+
+    def _save_mock_data(self, store: Dict[str, T]) -> None:
+        path = self._get_mock_file_path()
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                # Serialize Pydantic models cleanly
+                json.dump({k: json.loads(v.model_dump_json()) for k, v in store.items()}, f)
+        except Exception as e:
+            logger.warning(f"Failed to save mock data for {self.repository_name}: {e}")

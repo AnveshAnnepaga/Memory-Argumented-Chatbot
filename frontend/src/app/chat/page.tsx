@@ -66,7 +66,6 @@ function ChatStudioContent() {
   const [conversationsLoading, setConversationsLoading] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const pendingSendRef = useRef<UploadedFileInfo[] | null>(null);
   const sendMessageRef = useRef<((opts?: { text?: string; files?: UploadedFileInfo[] }) => Promise<void>) | null>(null);
 
   useEffect(() => {
@@ -141,17 +140,8 @@ function ChatStudioContent() {
     }
   }, [token]);
 
-  useEffect(() => {
-    if (pendingSendRef.current && sendMessageRef.current) {
-      const files = pendingSendRef.current;
-      pendingSendRef.current = null;
-      sendMessageRef.current({ files });
-    }
-  }, [uploadedFiles]);
-
   const handleFilesUploaded = useCallback((files: UploadedFileInfo[]) => {
     setUploadedFiles((prev) => [...prev, ...files]);
-    pendingSendRef.current = files;
     setTimeout(() => setShowFileUploader(false), 500);
   }, []);
 
@@ -450,8 +440,12 @@ function ChatStudioContent() {
                 className={`flex ${msg.sender === "user" ? "justify-end" : "gap-4"} w-full`}
               >
                 {msg.sender === "assistant" && (
-                  <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center border border-outline-variant/30 flex-shrink-0 shadow-md mt-0.5">
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-primary to-secondary animate-pulse shadow-[0_0_15px_rgba(0,229,255,0.5)]"></div>
+                  <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center border border-outline-variant/30 flex-shrink-0 shadow-md mt-0.5 overflow-hidden">
+                    <img
+                      src="/vyron-logo.png"
+                      alt="Vyron"
+                      className="w-full h-full object-contain rounded-xl"
+                    />
                   </div>
                 )}
 

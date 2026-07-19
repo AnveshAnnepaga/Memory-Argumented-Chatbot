@@ -32,7 +32,7 @@ class KnowledgeSourceRepository(BaseRepository[KnowledgeSource]):
     def __init__(self, session: Optional[AsyncSession] = None):
         super().__init__(domain_model_class=KnowledgeSource, repository_name="KnowledgeSourceRepository")
         self.session = session
-        self._memory_store: Dict[str, KnowledgeSource] = {}
+        self._memory_store: Dict[str, KnowledgeSource] = self._load_mock_data()
 
     def _is_stub(self) -> bool:
         return self.session is None and (postgres_manager.stub_mode or postgres_manager.session_factory is None)
@@ -47,6 +47,7 @@ class KnowledgeSourceRepository(BaseRepository[KnowledgeSource]):
         active_session = session or self.session
         if self._is_stub() or not active_session:
             self._memory_store[entity.id] = entity
+            self._save_mock_data(self._memory_store)
             return entity
 
         row = KnowledgeSourceTable(
@@ -87,6 +88,7 @@ class KnowledgeSourceRepository(BaseRepository[KnowledgeSource]):
             updated_dict["updated_at"] = datetime.now(timezone.utc)
             updated_source = KnowledgeSource.model_validate(updated_dict)
             self._memory_store[entity_id] = updated_source
+            self._save_mock_data(self._memory_store)
             return updated_source
 
         stmt = select(KnowledgeSourceTable).where(KnowledgeSourceTable.id == entity_id)
@@ -123,7 +125,10 @@ class KnowledgeSourceRepository(BaseRepository[KnowledgeSource]):
     async def delete(self, entity_id: str, session: Optional[AsyncSession] = None) -> bool:
         active_session = session or self.session
         if self._is_stub() or not active_session:
-            return self._memory_store.pop(entity_id, None) is not None
+            popped = self._memory_store.pop(entity_id, None)
+            if popped:
+                self._save_mock_data(self._memory_store)
+            return popped is not None
 
         stmt = select(KnowledgeSourceTable).where(KnowledgeSourceTable.id == entity_id)
         result = await active_session.execute(stmt)

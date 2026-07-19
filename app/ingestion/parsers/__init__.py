@@ -48,3 +48,5 @@ class FileParserRegistry:
 
 
 file_parser_registry = FileParserRegistry()
+
+import app.ingestion.parsers.registry

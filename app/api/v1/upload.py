@@ -70,17 +70,20 @@ async def upload_file(
     file_hash = await file_repo.compute_file_hash(file_bytes)
     existing = await file_repo.find_by_hash(file_hash)
     if existing:
-        logger.info(f"Duplicate file upload detected (hash: {file_hash[:12]}...) for '{file.filename}'")
-        return success_response(
-            data={
-                "file_id": existing.id,
-                "filename": existing.filename,
-                "duplicate": True,
-                "extracted_text": existing.extracted_text[:500] + "..." if existing.extracted_text and len(existing.extracted_text) > 500 else existing.extracted_text,
-            },
-            message=f"Duplicate file (identical to '{existing.filename}')",
-            request_id=request_id,
-        )
+        if existing.extracted_text:
+            logger.info(f"Duplicate file upload detected (hash: {file_hash[:12]}...) for '{file.filename}'")
+            return success_response(
+                data={
+                    "file_id": existing.id,
+                    "filename": existing.filename,
+                    "duplicate": True,
+                    "extracted_text": existing.extracted_text[:500] + "..." if existing.extracted_text and len(existing.extracted_text) > 500 else existing.extracted_text,
+                },
+                message=f"Duplicate file (identical to '{existing.filename}')",
+                request_id=request_id,
+            )
+        else:
+            logger.info(f"Duplicate file found (hash: {file_hash[:12]}...) but it has no extracted text. Re-parsing '{file.filename}'.")
 
     # Extract text content via file parsers
     ingestion_pipeline.inject_repository(doc_repo)
@@ -98,16 +101,22 @@ async def upload_file(
         saved_doc = await ingestion_pipeline.doc_manager.save_document(processed_doc)
 
     # Save file BLOB
-    document_file = DocumentFile(
-        filename=file.filename,
-        mime_type=mime_type,
-        size_bytes=len(file_bytes),
-        file_hash=file_hash,
-        blob_data=file_bytes,
-        extracted_text=processed_doc.clean_text[:100000] if processed_doc.clean_text else None,
-        document_id=saved_doc.document_id if saved_doc else None,
-    )
-    saved_file = await file_repo.save(document_file)
+    if existing:
+        saved_file = await file_repo.update(existing.id, {
+            "extracted_text": processed_doc.clean_text[:100000] if processed_doc.clean_text else None,
+            "document_id": saved_doc.document_id if saved_doc else None,
+        })
+    else:
+        document_file = DocumentFile(
+            filename=file.filename,
+            mime_type=mime_type,
+            size_bytes=len(file_bytes),
+            file_hash=file_hash,
+            blob_data=file_bytes,
+            extracted_text=processed_doc.clean_text[:100000] if processed_doc.clean_text else None,
+            document_id=saved_doc.document_id if saved_doc else None,
+        )
+        saved_file = await file_repo.save(document_file)
 
     # Optionally auto-index into RAG
     rag_indexed = False

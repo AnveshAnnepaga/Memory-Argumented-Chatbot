@@ -36,7 +36,7 @@ class UserRepository(BaseRepository[User]):
     def __init__(self, session: Optional[AsyncSession] = None):
         super().__init__(domain_model_class=User, repository_name="UserRepository")
         self.session = session
-        self._memory_store: Dict[str, User] = {}  # Fallback for offline/mock test execution
+        self._memory_store: Dict[str, User] = self._load_mock_data()  # Fallback for offline/mock test execution
 
     def _is_stub(self) -> bool:
         return self.session is None and (postgres_manager.stub_mode or postgres_manager.session_factory is None)
@@ -47,6 +47,7 @@ class UserRepository(BaseRepository[User]):
         active_session = session or self.session
         if self._is_stub() or not active_session:
             self._memory_store[entity.id] = entity
+            self._save_mock_data(self._memory_store)
             return entity
 
         row = UserTable(
@@ -84,11 +85,10 @@ class UserRepository(BaseRepository[User]):
             existing = self._memory_store.get(entity_id)
             if not existing:
                 raise RepositoryNotFoundException(f"User '{entity_id}' not found.")
-            updated_dict = existing.model_dump()
-            updated_dict.update(data)
-            updated_dict["updated_at"] = datetime.now(timezone.utc)
-            updated_user = User.model_validate(updated_dict)
+            updated_user = existing.model_copy(update=data)
+            updated_user.updated_at = datetime.now(timezone.utc)
             self._memory_store[entity_id] = updated_user
+            self._save_mock_data(self._memory_store)
             return updated_user
 
         stmt = select(UserTable).where(UserTable.id == entity_id)
@@ -110,7 +110,10 @@ class UserRepository(BaseRepository[User]):
         """Delete user record."""
         active_session = session or self.session
         if self._is_stub() or not active_session:
-            return self._memory_store.pop(entity_id, None) is not None
+            popped = self._memory_store.pop(entity_id, None)
+            if popped:
+                self._save_mock_data(self._memory_store)
+            return popped is not None
 
         stmt = select(UserTable).where(UserTable.id == entity_id)
         result = await active_session.execute(stmt)

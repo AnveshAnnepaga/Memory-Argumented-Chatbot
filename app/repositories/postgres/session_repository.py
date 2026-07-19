@@ -32,7 +32,7 @@ class SessionRepository(BaseRepository[Session]):
     def __init__(self, session: Optional[AsyncSession] = None):
         super().__init__(domain_model_class=Session, repository_name="SessionRepository")
         self.session = session
-        self._memory_store: Dict[str, Session] = {}
+        self._memory_store: Dict[str, Session] = self._load_mock_data()
 
     def _is_stub(self) -> bool:
         return self.session is None and (postgres_manager.stub_mode or postgres_manager.session_factory is None)
@@ -43,6 +43,7 @@ class SessionRepository(BaseRepository[Session]):
         active_session = session or self.session
         if self._is_stub() or not active_session:
             self._memory_store[entity.id] = entity
+            self._save_mock_data(self._memory_store)
             return entity
 
         row = SessionTable(
@@ -82,6 +83,7 @@ class SessionRepository(BaseRepository[Session]):
             updated_dict.update(data)
             updated_session = Session.model_validate(updated_dict)
             self._memory_store[entity_id] = updated_session
+            self._save_mock_data(self._memory_store)
             return updated_session
 
         stmt = select(SessionTable).where(SessionTable.id == entity_id)
@@ -122,7 +124,10 @@ class SessionRepository(BaseRepository[Session]):
     async def delete(self, entity_id: str, session: Optional[AsyncSession] = None) -> bool:
         active_session = session or self.session
         if self._is_stub() or not active_session:
-            return self._memory_store.pop(entity_id, None) is not None
+            popped = self._memory_store.pop(entity_id, None)
+            if popped:
+                self._save_mock_data(self._memory_store)
+            return popped is not None
 
         stmt = select(SessionTable).where(SessionTable.id == entity_id)
         result = await active_session.execute(stmt)

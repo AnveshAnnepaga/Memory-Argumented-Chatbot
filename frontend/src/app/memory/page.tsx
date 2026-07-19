@@ -18,26 +18,22 @@ export default function MemoryPage() {
   useEffect(() => {
     fetch(`${API_BASE_URL}/memory/profile?user_id=test-user`)
       .then((res) => (res.ok ? res.json() : Promise.reject("No backend")))
-      .then((data) => {
-        const facts: MemoryEntry[] = (data.semantic_facts || []).map((f: any, i: number) => ({
-          id: `fact-${i}`,
+      .then((response) => {
+        // The API returns { success: true, data: { semantic_memories: [], episodes: [] } }
+        const data = response.data || {};
+        const facts: MemoryEntry[] = (data.semantic_memories || []).map((f: any, i: number) => ({
+          id: f.id || `fact-${i}`,
           type: "fact" as const,
-          content: f.fact || f.content || "",
-          created_at: f.created_at || "",
-        }));
-        const prefs: MemoryEntry[] = (data.preferences || []).map((p: any, i: number) => ({
-          id: `pref-${i}`,
-          type: "preference" as const,
-          content: p.preference || p.content || "",
-          created_at: p.created_at || "",
+          content: f.content || "",
+          created_at: f.last_accessed || f.created_at || "",
         }));
         const episodes: MemoryEntry[] = (data.episodes || []).map((e: any, i: number) => ({
-          id: `ep-${i}`,
+          id: e.id || `ep-${i}`,
           type: "episode" as const,
           content: e.summary || e.content || "",
-          created_at: e.created_at || "",
+          created_at: e.timestamp || e.created_at || "",
         }));
-        setEntries([...facts, ...prefs, ...episodes]);
+        setEntries([...facts, ...episodes]);
       })
       .catch(() => setEntries([]))
       .finally(() => setLoading(false));

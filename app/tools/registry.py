@@ -295,38 +295,30 @@ async def _handle_web_search(request: ToolRequest) -> Dict[str, Any]:
     logger.info("Executing Web Search tool for query: '%s'", query)
 
     try:
-        # Use DuckDuckGo HTML endpoint
-        url = "https://html.duckduckgo.com/html/"
-        params = {"q": query}
+        url = "https://api.duckduckgo.com/"
+        params = {"q": query, "format": "json", "no_html": 1, "skip_disambig": 1}
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
         async with httpx.AsyncClient(timeout=15.0, headers=headers) as client:
-            resp = await client.post(url, data=params)
+            resp = await client.get(url, params=params)
             resp.raise_for_status()
-            html = resp.text
+            data = resp.json()
 
-        # Parse results from HTML
-        from bs4 import BeautifulSoup
-        soup = BeautifulSoup(html, "html.parser")
         results = []
-
-        for result in soup.select(".result__body")[:max_results]:
-            title_elem = result.select_one(".result__title")
-            snippet_elem = result.select_one(".result__snippet")
-            url_elem = result.select_one(".result__url")
-
-            if title_elem:
-                title = title_elem.get_text(strip=True)
-                snippet = snippet_elem.get_text(strip=True) if snippet_elem else ""
-                link = title_elem.find("a", href=True)
-                link_href = link["href"] if link else ""
-                if link_href and link_href.startswith("//"):
-                    link_href = "https:" + link_href
+        if data.get("AbstractText"):
+            results.append({
+                "title": data.get("Heading", query),
+                "snippet": data.get("AbstractText"),
+                "url": data.get("AbstractURL", "")
+            })
+        
+        for item in data.get("RelatedTopics", [])[:max_results]:
+            if "Text" in item and "FirstURL" in item:
                 results.append({
-                    "title": title,
-                    "snippet": snippet,
-                    "url": link_href
+                    "title": item.get("Text", "").split(" - ")[0],
+                    "snippet": item.get("Text", ""),
+                    "url": item.get("FirstURL", "")
                 })
 
         logger.info("Web search returned %d results for query: '%s'", len(results), query)

@@ -33,7 +33,7 @@ class DocumentFileRepository(BaseRepository[DocumentFile]):
     def __init__(self, session: Optional[AsyncSession] = None):
         super().__init__(domain_model_class=DocumentFile, repository_name="DocumentFileRepository")
         self.session = session
-        self._memory_store: Dict[str, DocumentFile] = {}
+        self._memory_store: Dict[str, DocumentFile] = self._load_mock_data()
 
     def _is_stub(self) -> bool:
         return self.session is None
@@ -72,6 +72,7 @@ class DocumentFileRepository(BaseRepository[DocumentFile]):
     async def save(self, entity: DocumentFile) -> DocumentFile:
         if self._is_stub():
             self._memory_store[entity.id] = entity
+            self._save_mock_data(self._memory_store)
             return entity
         row = self._to_table(entity)
         self.session.add(row)
@@ -89,7 +90,10 @@ class DocumentFileRepository(BaseRepository[DocumentFile]):
     @log_and_handle_errors("delete")
     async def delete(self, file_id: str) -> bool:
         if self._is_stub():
-            return self._memory_store.pop(file_id, None) is not None
+            popped = self._memory_store.pop(file_id, None)
+            if popped:
+                self._save_mock_data(self._memory_store)
+            return popped is not None
         row = await self.session.get(DocumentFileTable, file_id)
         if row:
             await self.session.delete(row)
@@ -132,6 +136,7 @@ class DocumentFileRepository(BaseRepository[DocumentFile]):
             f = self._memory_store.get(file_id)
             if f:
                 f.document_id = document_id
+                self._save_mock_data(self._memory_store)
             return f
         row = await self.session.get(DocumentFileTable, file_id)
         if row:
@@ -159,6 +164,7 @@ class DocumentFileRepository(BaseRepository[DocumentFile]):
         updated = DocumentFile.model_validate(dump)
         if self._is_stub():
             self._memory_store[entity_id] = updated
+            self._save_mock_data(self._memory_store)
             return updated
         row = await self.session.get(DocumentFileTable, entity_id)
         if row:

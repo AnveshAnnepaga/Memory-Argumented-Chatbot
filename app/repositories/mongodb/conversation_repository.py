@@ -18,7 +18,7 @@ class ConversationRepository(BaseRepository[Conversation]):
         super().__init__(domain_model_class=Conversation, repository_name="ConversationRepository")
         self.db = db
         self.collection_name = "conversations"
-        self._memory_store: Dict[str, Conversation] = {}
+        self._memory_store: Dict[str, Conversation] = self._load_mock_data()
 
     def _get_coll(self) -> Any:
         active_db = self.db or mongo_manager.get_db()
@@ -30,6 +30,7 @@ class ConversationRepository(BaseRepository[Conversation]):
         coll = self._get_coll()
         if coll is None:
             self._memory_store[entity.id] = entity
+            self._save_mock_data(self._memory_store)
             return entity
 
         payload = entity.model_dump()
@@ -59,6 +60,7 @@ class ConversationRepository(BaseRepository[Conversation]):
             updated_dict["updated_at"] = datetime.now(timezone.utc)
             updated = Conversation.model_validate(updated_dict)
             self._memory_store[entity_id] = updated
+            self._save_mock_data(self._memory_store)
             return updated
 
         data["updated_at"] = datetime.now(timezone.utc)
@@ -80,7 +82,10 @@ class ConversationRepository(BaseRepository[Conversation]):
         """Delete conversation (`Delete conversation`)."""
         coll = self._get_coll()
         if coll is None:
-            return self._memory_store.pop(entity_id, None) is not None
+            popped = self._memory_store.pop(entity_id, None)
+            if popped:
+                self._save_mock_data(self._memory_store)
+            return popped is not None
 
         result = await coll.delete_one({"$or": [{"_id": entity_id}, {"id": entity_id}]})
         return result.deleted_count > 0

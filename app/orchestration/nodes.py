@@ -56,7 +56,7 @@ _WEB_SEARCH_TOOL = {
 async def _execute_web_search(query: str, max_results: int = 5) -> str:
     """Execute a DuckDuckGo web search and return formatted results."""
     try:
-        url = "https://html.duckduckgo.com/html/"
+        url = "https://lite.duckduckgo.com/lite/"
         params = {"q": query}
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         async with httpx.AsyncClient(timeout=15.0, headers=headers) as client:
@@ -65,17 +65,16 @@ async def _execute_web_search(query: str, max_results: int = 5) -> str:
             soup = BeautifulSoup(resp.text, "html.parser")
 
         results = []
-        for result in soup.select(".result__body")[:max_results]:
-            title_elem = result.select_one(".result__title")
-            snippet_elem = result.select_one(".result__snippet")
-            if title_elem:
-                title = title_elem.get_text(strip=True)
-                snippet = snippet_elem.get_text(strip=True) if snippet_elem else ""
-                link = title_elem.find("a", href=True)
-                link_href = link["href"] if link else ""
-                if link_href.startswith("//"):
-                    link_href = "https:" + link_href
-                results.append(f"- **{title}**\n  {snippet}\n  {link_href}")
+        for r in soup.select("tr"):
+            snippet_elem = r.select_one(".result-snippet")
+            if snippet_elem:
+                snippet = snippet_elem.get_text(strip=True)
+                # Sometimes 'Item 1 of X' prefixes the snippet
+                if snippet.startswith("Item"):
+                    snippet = snippet.split(" ", 4)[-1] if len(snippet.split()) > 4 else snippet
+                results.append(f"- {snippet}")
+                if len(results) >= max_results:
+                    break
 
         if results:
             return "Web search results:\n\n" + "\n\n".join(results)
@@ -335,8 +334,9 @@ async def context_merge_node(state: WorkflowState) -> Dict[str, Any]:
 
     rag_ctx = state.get("retrieved_rag_context", "").strip()
     graph_ctx = state.get("retrieved_graph_context", "").strip()
-    mem_ctx = state.get("retrieved_memory_context", "").strip()
-    tool_ctx = state.get("retrieved_tool_context", "").strip()
+    mem_ctx = state.get("retrieved_memory_context", "")
+    tool_ctx = state.get("retrieved_tool_context", "")
+    file_ctx = state.get("file_context", "")
 
     def _scrub_retrieval_noise(s: str) -> str:
         if not s:
@@ -356,6 +356,9 @@ async def context_merge_node(state: WorkflowState) -> Dict[str, Any]:
         return s.strip()
 
     merged_sections: List[str] = []
+    if file_ctx:
+        merged_sections.append(f"### UPLOADED FILE CONTENT:\n{file_ctx}\n")
+
     if mem_ctx and mem_ctx not in ("[Long-Term Memory Engine Offline: Using default context]", ""):
         merged_sections.append(_scrub_retrieval_noise(mem_ctx))
 
@@ -423,10 +426,11 @@ async def prompt_builder_node(state: WorkflowState) -> Dict[str, Any]:
 
     if final_context and final_context.strip() and "[Engine Offline" not in final_context:
         final_prompt = (
-            "Answer the user's question. Supporting information is provided below — use it as "
-            "your primary source. If it covers the question, answer from it. If it is absent or "
-            "insufficient, supplement with your own knowledge to give a complete answer. "
-            "Do NOT cite, reference, or mention the supporting information.\n\n"
+            "You MUST answer the user's question using ONLY the provided SUPPORTING INFORMATION below. "
+            "If the information contains the answer, explain it highly comprehensively and provide a lengthy, detailed response. "
+            "If the supporting information is insufficient or does not contain the answer, say so directly, "
+            "and then you may briefly supplement with your own knowledge if it helps answer the query in detail. "
+            "Do NOT cite, reference, or explicitly mention 'the supporting information' in your response.\n\n"
             f"--- SUPPORTING INFORMATION ---\n{final_context}\n--- END ---\n\n"
             "IMPORTANT: Do NOT include any diagrams, flowcharts, mermaid code blocks, or "
             "any visual/graphical representations in your answer. Text only.\n\n"
@@ -435,7 +439,8 @@ async def prompt_builder_node(state: WorkflowState) -> Dict[str, Any]:
     else:
         # No retrieval context available -> ask Groq to answer from its world knowledge.
         final_prompt = (
-            "Answer the user's question using your own knowledge. "
+            "Answer the user's question comprehensively using your own knowledge. "
+            "Please provide a highly detailed, thorough, and lengthy explanation. "
             "Do not preface your answer with phrases about your source or training.\n\n"
             "IMPORTANT: Do NOT include any diagrams, flowcharts, mermaid code blocks, or "
             "any visual/graphical representations in your answer. Text only.\n\n"
@@ -587,18 +592,18 @@ async def llm_generation_node(state: WorkflowState) -> Dict[str, Any]:
 
         tool_ctx = state.get("retrieved_tool_context", "").strip()
         already_searched = bool(tool_ctx and tool_ctx not in ("[Tool System Offline: Execution failed]", ""))
-        gen_kwargs: Dict[str, Any] = {"temperature": 0.3, "max_tokens": 500}
+        gen_kwargs: Dict[str, Any] = {"temperature": 0.3, "max_tokens": 3000}
 
         logger.info(f"Making LLM call via {llm_manager.active_provider_key}")
         logger.info(f"Prompt length: {len(final_prompt)} chars")
 
         res = None
         try:
-            # Add timeout to prevent hanging
+            # Add timeout to prevent hanging, increased for larger RAG contexts and max_tokens=3000
             import asyncio
             res = await asyncio.wait_for(
                 llm_manager.generate(messages=messages, **gen_kwargs),
-                timeout=30.0
+                timeout=120.0
             )
             logger.info(f"LLM call completed - response type: {type(res)}")
         except asyncio.TimeoutError:

@@ -36,7 +36,8 @@ class OrchestrationPipeline:
         self,
         user_query: str,
         conversation_id: str = "default",
-        user_id: str = "default"
+        user_id: str = "default",
+        file_context: str = ""
     ) -> WorkflowResponse:
         """
         Executes the full LangGraph reasoning workflow on the incoming user query.
@@ -47,7 +48,8 @@ class OrchestrationPipeline:
         initial_state = create_initial_state(
             user_query=clean_query,
             conversation_id=conversation_id,
-            user_id=user_id
+            user_id=user_id,
+            file_context=file_context
         )
 
         try:

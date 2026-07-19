@@ -38,7 +38,7 @@ class DocumentRepository(BaseRepository[Document]):
     def __init__(self, session: Optional[AsyncSession] = None):
         super().__init__(domain_model_class=Document, repository_name="DocumentRepository")
         self.session = session
-        self._memory_store: Dict[str, Document] = {}
+        self._memory_store: Dict[str, Document] = self._load_mock_data()
 
     def _is_stub(self) -> bool:
         return self.session is None
@@ -116,6 +116,7 @@ class DocumentRepository(BaseRepository[Document]):
     async def create(self, entity: Document) -> Document:
         if self._is_stub():
             self._memory_store[entity.id] = entity
+            self._save_mock_data(self._memory_store)
             return entity
 
         row = self._to_table(entity)
@@ -144,6 +145,7 @@ class DocumentRepository(BaseRepository[Document]):
 
         if self._is_stub():
             self._memory_store[entity_id] = updated
+            self._save_mock_data(self._memory_store)
             return updated
 
         row = await self.session.get(DocumentTable, entity_id)
@@ -159,7 +161,10 @@ class DocumentRepository(BaseRepository[Document]):
     @log_and_handle_errors("delete")
     async def delete(self, entity_id: str) -> bool:
         if self._is_stub():
-            return self._memory_store.pop(entity_id, None) is not None
+            popped = self._memory_store.pop(entity_id, None)
+            if popped:
+                self._save_mock_data(self._memory_store)
+            return popped is not None
 
         row = await self.session.get(DocumentTable, entity_id)
         if row:

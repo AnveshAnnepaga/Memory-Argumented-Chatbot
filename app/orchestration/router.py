@@ -61,7 +61,7 @@ _PERSONAL_PATTERNS = re.compile(
 )
 
 _TOOL_PATTERNS = re.compile(
-    r"\b(weather|temperature|forecast|rain|cloudy|sunny|humidity|wind|"
+    r"\b(weather|wheather|temperature|forecast|rain|cloudy|sunny|humidity|wind|"
     r"calculate|compute|sqrt|sin\(|cos\(|tan\(|"
     r"convert\s+\d|usd|inr|eur|gbp|jpy|exchange\s+rate|currency|"
     r"current\s+time|what\s+time|today'?s\s+date|timezone|utc|local\s+time|"
@@ -73,6 +73,7 @@ _TOOL_PATTERNS = re.compile(
     r"cricket\s+score|match\s+result|live\s+score|who\s+won\s+match|ipl|world\s+cup|test\s+match|odi|t20|"
     r"stock\s+price|crypto\s+price|bitcoin|ethereum|share\s+price|market\s+cap|nasdaq|nse|bse|"
     r"search\s+the\s+web|web\s+search|google\s+search|duckduckgo|search\s+for|find\s+information|"
+    r"startup|startups|company|organization|firm|business|product|"
     # Roles / positions
     r"who\s+is\s+(?:the\s+)?(?:current\s+|new\s+)?(?:president|prime\s*minister|captain|"
     r"leader|CEO|director|chancellor|governor|mayor|chief|head|chairman|secretary|"

@@ -46,7 +46,9 @@ export default function AttachmentRenderer({ attachments }: AttachmentRendererPr
           <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {att.filename}
           </span>
-          <span style={{ color: '#6b7280', fontSize: '11px' }}>{formatSize(att.sizeBytes)}</span>
+          {att.sizeBytes > 0 && (
+            <span style={{ color: '#6b7280', fontSize: '11px' }}>{formatSize(att.sizeBytes)}</span>
+          )}
         </div>
       ))}
     </div>

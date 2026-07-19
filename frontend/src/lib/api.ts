@@ -57,7 +57,8 @@ apiClient.interceptors.response.use(
   (error) => {
     const msg = error.response?.data?.error?.message || error.response?.data?.detail || error.response?.data?.message || error.message || 'Unknown error';
     const status = error.response?.status ? `[${error.response.status}]` : '';
-    console.error(`API Client Error ${status}:`, msg, error.response?.data || '');
+    // Avoid console.error here so that Next.js doesn't show an error overlay for caught exceptions
+    // console.error(`API Client Error ${status}:`, msg, error.response?.data || '');
     return Promise.reject(new Error(`${status} ${msg}`.trim()));
   }
 );

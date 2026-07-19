@@ -26,11 +26,14 @@ motor
 pinecone
 neo4j
 
-# Web Scraping
+# Web Scraping & File Parsers
 scrapy
 beautifulsoup4
 lxml
 langdetect
+PyMuPDF
+python-docx
+Pillow
 
 # Evaluation
 ragas
