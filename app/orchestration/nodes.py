@@ -586,16 +586,21 @@ async def llm_generation_node(state: WorkflowState) -> Dict[str, Any]:
         ]
 
         # Only pass web_search tool if Phase A didn't already fetch results
+        # Note: Some models like NVIDIA Nemotron may not fully support tool calling
         tool_ctx = state.get("retrieved_tool_context", "").strip()
         already_searched = bool(tool_ctx and tool_ctx not in ("[Tool System Offline: Execution failed]", ""))
         gen_kwargs: Dict[str, Any] = {"temperature": 0.5, "max_tokens": 1500}
-        if not already_searched:
-            gen_kwargs["tools"] = [_WEB_SEARCH_TOOL]
+        # Disable tools for now as NVIDIA NIM may not fully support them
+        # if not already_searched:
+        #     gen_kwargs["tools"] = [_WEB_SEARCH_TOOL]
 
         res = await llm_manager.generate(
             messages=messages,
             **gen_kwargs,
         )
+        if not isinstance(res, dict):
+            raise ValueError(f"LLM returned unexpected response type: {type(res)}")
+
         tool_calls = res.get("tool_calls")
 
         if tool_calls:

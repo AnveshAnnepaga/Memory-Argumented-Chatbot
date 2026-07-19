@@ -39,23 +39,34 @@ class MockLLMProvider(BaseLLMProvider):
         timeout: Optional[float] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        # Simulate slight async processing delay
         await asyncio.sleep(0.05)
 
         prompt_text = (
             messages[-1].get("content", "") if isinstance(messages, list) and messages
             else str(messages)
         ).strip()
-        
+
         import re
         q_lower = prompt_text.lower().strip()
-        greetings = [r"\bhello\b", r"\bhi\b", r"\bhey\b", r"\bgreetings\b", r"\bgood morning\b", r"\bgood evening\b"]
+
+        greetings = [r"\bhello\b", r"\bhi\b", r"\bhey\b", r"\bgreetings\b", r"\bgood morning\b", r"\bgood afternoon\b", r"\bgood evening\b"]
         if any(re.search(pat, q_lower) for pat in greetings) and len(q_lower.split()) <= 4:
-            simulated_response = "Hello! I'm ready to assist you. What can we explore or solve together today?"
-        elif any(re.search(r"\b(who are you|what are you)\b", q_lower) for _ in [0]):
-            simulated_response = "I am Vyron AI, an intelligent AI coding and reasoning assistant created by Anvesh Mishra. How can I help you today?"
+            simulated_response = "Hello! I'm Vyron AI, your intelligent assistant. I'm here to help with coding, analysis, explanations, and more. What would you like to explore today?"
+        elif any(re.search(r"\b(who are you|what are you|about you)\b", q_lower) for _ in [0]):
+            simulated_response = "I am Vyron AI, an intelligent AI coding and reasoning assistant created by Anvesh Mishra. I'm powered by a hybrid RAG system combining vector search, knowledge graphs, and long-term memory. How can I help you today?"
+        elif re.search(r"\bpython\b", q_lower) and any(w in q_lower for w in ["what", "explain", "tell", "about"]):
+            simulated_response = "Python is a high-level, general-purpose programming language known for its clear syntax and readability. It supports multiple programming paradigms including procedural, object-oriented, and functional programming. Python is widely used in web development, data science, machine learning, automation, and more."
+        elif re.search(r"\b(langchain|langgraph)\b", q_lower) and any(w in q_lower for w in ["what", "explain", "tell", "about"]):
+            topic = "LangChain" if "langchain" in q_lower else "LangGraph"
+            simulated_response = f"{topic} is a framework for building applications powered by large language models (LLMs). " + (f"LangChain provides tools for prompts, chains, agents, and memory components." if topic == "LangChain" else "LangGraph extends LangChain with graph-based workflows using a StateGraph model for complex multi-step reasoning with state management.")
+        elif re.search(r"\b(rag|retrieval|hybrid)\b", q_lower) and any(w in q_lower for w in ["what", "explain", "tell", "about"]):
+            simulated_response = "RAG (Retrieval-Augmented Generation) combines vector database retrieval with LLM generation. Hybrid RAG blends dense vector search (semantic similarity) with sparse keyword search (BM25) for better retrieval. Results are fused using Reciprocal Rank Fusion for optimal context selection."
+        elif any(w in q_lower for w in ["help", "capabilities", "what can you do"]):
+            simulated_response = "I can help you with: coding assistance and debugging, explaining technical concepts and architectures, analyzing documents (PDF, DOCX, images), web search and information retrieval, database queries and graph traversal, calculator and unit conversions, and general reasoning tasks. Just ask!"
+        elif re.search(r"\b(thanks|thank you|cheers)\b", q_lower):
+            simulated_response = "You're welcome! Is there anything else I can help you with?"
         else:
-            simulated_response = f"I have analyzed your query: '{prompt_text}'. Based on our current context, here are the key architectural details:\n\n* **Overview**: Directly orchestrating workflows across nodes.\n* **Key Mechanism**: Graph-based multi-step reasoning with state persistence.\n* **Integration**: Connected to hybrid vector search and memory management."
+            simulated_response = f"I understand you're asking about: '{prompt_text}'. To provide accurate information, I need access to my full LLM capabilities. Currently running in fallback mode. Please ensure GROQ_API_KEY or NVIDIA_API_KEY is properly configured in your environment variables. For production, set these API keys in your Railway/Railway environment settings."
 
         return {
             "content": simulated_response,
