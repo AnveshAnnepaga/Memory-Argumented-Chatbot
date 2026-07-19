@@ -3,6 +3,8 @@
 **Designed, Architected, and Full-Stack Engineered by [Anvesh Mishra](https://github.com/anvesh-01)**  
 *An enterprise-grade, modular, and decoupled AI Assistant Platform built across 15 rigorous verification milestones.*
 
+**🌍 Live Demo:** [https://vyronai-six.vercel.app](https://vyronai-six.vercel.app)
+
 ---
 
 ## 🌟 Executive Summary & Architectural Philosophy
@@ -13,6 +15,7 @@ The **Antigravity Intelligence Engine** represents the convergence of high-perfo
 1. **Zero Architectural Coupling**: Every intelligence module (`RAG`, `GraphRAG`, `Memory`, `Tools`, `Evaluation`) operates as an independent, standalone service layer communicating through structured contracts and Pydantic V2 schemas.
 2. **Strict Separation of Concerns**: The frontend (`Next.js 15`) communicates exclusively over REST (`/api/v1`) and Server-Sent Events (`/api/v1/chat/stream`). No frontend component touches database drivers, vector indexes, or LLM clients directly.
 3. **Non-Interfering Observability**: Evaluation and telemetry run asynchronously via read-only post-query hooks, ensuring production user requests maintain sub-200ms warm-cache execution times without blocking.
+4. **PaaS-Ready Persistence**: Full database connectivity support for cloud deployments (Railway, Render, Vercel) dynamically routing `DATABASE_URL` and `MONGO_URL` to persistent PostgreSQL and MongoDB clusters.
 
 ---
 
@@ -47,7 +50,7 @@ graph TD
         PostgresDB[(PostgreSQL 16<br/>Profile & Episodic Logs)]
         Neo4jDB[(Neo4j 5 Graph<br/>Knowledge Entities & Edges)]
         PineconeCloud[(Pinecone Cloud<br/>BAAI/bge-large-en Vectors)]
-        GroqLLM[("Groq Cloud API<br/>Llama 3.3 70B Versatile Inference")]
+        GroqLLM[("NVIDIA NIM / Groq Cloud API<br/>Llama 3.3 70B Versatile Inference")]
     end
 
     ChatStudio & Dashboards <==REST / SSE==> NGINX
@@ -63,22 +66,21 @@ graph TD
 
 ---
 
-## 🔍 Milestone 14 Verification & Review Address Matrix
+## 🔍 Key Engine Components & Workflows
 
-During our verification of Milestone 14 (Evaluation, Monitoring & Observability), we addressed three critical production considerations to ensure full enterprise readiness:
-
-| Review Item | Observation / Question | Our Production Engineering Standard & Resolution |
-| :--- | :--- | :--- |
-| **⚠️ 1. End-to-End Latency** | *Initial cold test showed ~8.3s total latency across Calculator + FastAPI explanation.* | **Cold-Start vs. Warm-Start Profiling**: On the initial startup invocation, model loading (`SentenceTransformer BAAI/bge-large-en`) incurs a one-time ~7.2s memory initialization penalty. Once loaded into RAM, **subsequent warm-cache executions complete in under 200ms** (`Router: 12.4ms, Memory: 35.1ms, RAG: 48.2ms, Groq LLM: 61.9ms, Evaluation Hook: 4.5ms`). |
-| **⚠️ 2. Hallucination Score** | *Reported score `0.610` — is `0.0` or `1.0` considered good or bad?* | **Strict 4-Tier Health Grading Standard (`0.0 = Perfect Grounding, 1.0 = Total Hallucination`)**:<br/>• **`0.00 – 0.20`**: `HEALTHY` (High factual groundedness)<br/>• **`0.21 – 0.45`**: `WARNING` (Moderate verification recommended)<br/>• **`0.46 – 0.70`**: `DEGRADED` (Elevated hallucination risk)<br/>• **`0.71 – 1.00`**: `CRITICAL` (Unverified / rejected response) |
-| **⚠️ 3. Cost Estimation** | *Avoid hardcoding LLM pricing rates (`$0.000032`) since provider pricing changes.* | **Dynamic Token Cost Configuration (`pricing.yaml` + `/settings`)**: Pricing per 1M input/output tokens is configurable dynamically via the frontend `Settings` dashboard (`/settings`) or backend YAML files, ensuring cost telemetry adapts instantly to Groq Llama-3 API price updates without code recompilation. |
+1. **Intelligent Router (LangGraph)**: Dynamically routes incoming queries across 5 distinct pipelines: `DIRECT_LLM`, `HYBRID_RAG`, `GRAPH_RAG`, `MEMORY_ENHANCED`, and `TOOLS_ENHANCED` based on intent confidence scores.
+2. **Robust LLM Fallback Chain**: Features a proactive empty-response validation engine. If the active LLM provider (e.g., NVIDIA) hallucinates or returns an empty payload, the manager seamlessly triggers a fallback chain to secondary providers (e.g., Groq) or mock responses, guaranteeing zero downtime.
+3. **Hybrid RAG & Reciprocal Rank Fusion**: Merges Pinecone's dense embeddings (`BAAI/bge-large-en`) with sparse `BM25` retrieval. The retrieved sets are statistically normalized using Reciprocal Rank Fusion (RRF) for optimal context relevance.
+4. **GraphRAG Multi-Hop Reasoning**: Leverages Neo4j to execute cypher queries for structural entity traversal, resolving complex multi-step logical questions by connecting disparate graph nodes.
+5. **Persistent Long-Term Memory**: Automatically extracts semantic facts and episodic turns per user, stored structurally in PostgreSQL. The frontend retrieves these to personalize UI responses across sessions.
+6. **Live Server-Sent Events (SSE)**: Streams LangGraph execution states, intermediate tool thoughts, and final markdown LLM tokens down to the Next.js frontend with zero buffering.
 
 ---
 
 ## 🧭 Project Roadmap & Completed Milestones (15 / 15 Verified)
 
 - ✅ **Milestone 1**: FastAPI Backend Architecture, Configuration Layer & Exception Handling
-- ✅ **Milestone 2**: Infrastructure & Database Connections (`asyncpg`, `motor`, `Neo4j`)
+- ✅ **Milestone 2**: Infrastructure & Database Connections (`asyncpg`, `motor`, `Neo4j`, PaaS `DATABASE_URL` routing)
 - ✅ **Milestone 3**: Repository Layer (`PostgresRepository`, `MongoRepository`, `Neo4jRepository`)
 - ✅ **Milestone 4**: Knowledge Ingestion Pipeline (`PDF`, `DOCX`, `Markdown`, `YAML` Chunking)
 - ✅ **Milestone 5**: Hybrid RAG Pipeline (`Pinecone` Dense 1024-d + `BM25` Sparse + `RRF` Fusion)
@@ -86,11 +88,11 @@ During our verification of Milestone 14 (Evaluation, Monitoring & Observability)
 - ✅ **Milestone 7**: Pinecone Dense Retrieval Engine & Cross-Encoder Reranking
 - ✅ **Milestone 8**: GraphRAG Knowledge Graph (`Neo4j` Entity/Relationship Extraction)
 - ✅ **Milestone 9 & 10**: Retrieval Fusion (`Reciprocal Rank Fusion`) & Graph Structural Evaluation
-- ✅ **Milestone 11**: LangGraph Orchestration (`The Brain` — Conditional DAG Reasoning)
+- ✅ **Milestone 11**: LangGraph Orchestration (`The Brain` — Conditional DAG Reasoning & Fallback Validation)
 - ✅ **Milestone 12**: Long-Term Memory System (`PostgreSQL` User Profiles & Ebbinghaus Forgetting Curves)
 - ✅ **Milestone 13**: Tool Execution Framework (`Decoupled WebSearch, SQL, Calculator & Cypher Tools`)
 - ✅ **Milestone 14**: Evaluation, Monitoring & Observability Platform (`11 Pillars + Dynamic Pricing`)
-- ✅ **Milestone 15**: Productization, Next.js 15 Cyber UI & Production Docker Deployment
+- ✅ **Milestone 15**: Productization, Next.js 15 Cyber UI, Live SSE Streaming & Production Docker Deployment
 
 ---
 
