@@ -4,6 +4,11 @@ Vyron AI is an intelligent, modular, and decoupled AI Assistant Platform. It sea
 
 **🌍 Live Demo:** [https://vyronai-six.vercel.app](https://vyronai-six.vercel.app)
 
+
+**📚 Documentation**
+
+For complete technical documentation including architecture diagrams, API reference, configuration details, and deployment guides, see: **[Vyron_AI_Documentation.md](./Vyron_AI_Documentation.md)**
+
 ---
 
 ## 🌟 Executive Summary & Architectural Philosophy
