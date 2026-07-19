@@ -1,34 +1,34 @@
-# 🚀 Vyron AI
+# Vyron AI
 
-Vyron AI is an intelligent, modular, and decoupled AI Assistant Platform. It seamlessly integrates long-term memory, knowledge graph reasoning, and real-time data retrieval to provide context-aware, highly accurate responses in a lightning-fast modern interface.
+Vyron AI is an intelligent, modular, and decoupled AI Assistant Platform that seamlessly integrates long-term memory, knowledge graph reasoning, real-time data retrieval, and Hybrid RAG to provide context-aware, highly accurate responses in a lightning-fast modern interface.
 
-**🌍 Live Demo:** [https://vyronai-six.vercel.app](https://vyronai-six.vercel.app)
-
-
-**📚 Documentation**
-
-For complete technical documentation including architecture diagrams, API reference, configuration details, and deployment guides, see: **[Vyron_AI_Documentation.md](./Vyron_AI_Documentation.md)**
+**Live Demo:** [https://vyronai-six.vercel.app](https://vyronai-six.vercel.app)
 
 ---
 
-## 🌟 Executive Summary & Architectural Philosophy
-
-**Vyron AI** represents the convergence of high-performance asynchronous API backend systems (`FastAPI`), stateful conditional graph orchestration (`LangGraph StateGraph`), dense & sparse vector retrieval (`Pinecone + BM25 Hybrid RAG`), multi-hop knowledge graph reasoning (`Neo4j GraphRAG`), persistent long-term episodic/semantic memory (`PostgreSQL`), and modern glassmorphism cyber UI engineering (`Next.js 15 App Router`).
-
-### Core Design Guarantees:
-1. **Zero Architectural Coupling**: Every intelligence module (`RAG`, `GraphRAG`, `Memory`, `Tools`, `Evaluation`) operates as an independent, standalone service layer communicating through structured contracts and Pydantic V2 schemas.
-2. **Strict Separation of Concerns**: The frontend (`Next.js 15`) communicates exclusively over REST (`/api/v1`) and Server-Sent Events (`/api/v1/chat/stream`). No frontend component touches database drivers, vector indexes, or LLM clients directly.
-3. **Non-Interfering Observability**: Evaluation and telemetry run asynchronously via read-only post-query hooks, ensuring production user requests maintain sub-200ms warm-cache execution times without blocking.
-4. **PaaS-Ready Persistence**: Full database connectivity support for cloud deployments (Railway, Render, Vercel) dynamically routing `DATABASE_URL` and `MONGO_URL` to persistent PostgreSQL and MongoDB clusters.
+## Table of Contents
+1. [Architecture](#-architecture)
+2. [Technology Stack](#-technology-stack)
+3. [Core Components](#-core-components)
+4. [API Endpoints](#-api-endpoints)
+5. [Data Storage](#-data-storage)
+6. [Configuration](#-configuration)
+7. [Development Setup](#-development-setup)
+8. [Deployment](#-deployment)
+9. [Security](#-security)
+10. [CI/CD](#-cicd)
+11. [Roadmap](#-roadmap)
 
 ---
 
-## 🏗️ End-to-End System Architecture
+## 🏗️ Architecture
+
+### System Architecture
 
 ```mermaid
 graph TD
     subgraph Frontend["Next.js 15 Cyber UI Layer (Port 3000)"]
-        ChatStudio["Chat Studio Studio (/chat)<br/>SSE Stream Reader"]
+        ChatStudio["Chat Studio (/chat)<br/>SSE Stream Reader"]
         Dashboards["Dashboards (/history, /memory, /knowledge, /graph, /evaluation, /admin)"]
         ZustandStore["Zustand Store + TanStack Query Caching"]
     end
@@ -68,106 +68,371 @@ graph TD
     Observability -.-o Orchestration
 ```
 
+### Data Flow
+
+```
+User Query → Next.js Frontend → NGINX → FastAPI /api/v1/chat/stream
+    ↓
+LangGraph StateGraph "The Brain"
+    ↓ (Intent Classification)
+[RAG | GraphRAG | Memory | Tools] → LLM (NVIDIA/Groq)
+    ↓
+SSE Response Stream
+```
+
+### Project Structure
+
+```
+Memory-Argumented-Chatbot/
+├── .env                         # Secrets (git-ignored)
+├── .env.example                 # Template for configuration
+├── main.py                      # Backend entry point
+├── requirements.txt             # Python dependencies
+├── Dockerfile                   # Backend container
+├── docker-compose.yml           # Full stack deployment
+├── railway.json                 # Railway config
+├── vercel.json                  # Vercel config
+│
+├── app/                         # FastAPI application
+│   ├── main.py                 # App factory
+│   ├── core/                   # Settings & config
+│   ├── api/v1/                 # API routes
+│   ├── orchestration/          # LangGraph brain
+│   ├── rag/                    # Hybrid RAG
+│   ├── memory/                 # LTMemory
+│   ├── graph/                  # GraphRAG
+│   └── tools/                  # Tool framework
+│
+├── frontend/                   # Next.js application
+│   ├── package.json
+│   ├── src/                    # React components
+│   └── Dockerfile              # Frontend container
+│
+└── nginx/
+    └── nginx.conf              # Reverse proxy config
+```
+
 ---
 
-## 🔍 Key Engine Components & Workflows
+## 🛠️ Technology Stack
 
-1. **Intelligent Router (LangGraph)**: Dynamically routes incoming queries across 5 distinct pipelines: `DIRECT_LLM`, `HYBRID_RAG`, `GRAPH_RAG`, `MEMORY_ENHANCED`, and `TOOLS_ENHANCED` based on intent confidence scores.
-2. **Robust LLM Fallback Chain**: Features a proactive empty-response validation engine. If the active LLM provider (e.g., NVIDIA) hallucinates or returns an empty payload, the manager seamlessly triggers a fallback chain to secondary providers (e.g., Groq) or mock responses, guaranteeing zero downtime.
-3. **Hybrid RAG & Reciprocal Rank Fusion**: Merges Pinecone's dense embeddings (`BAAI/bge-large-en`) with sparse `BM25` retrieval. The retrieved sets are statistically normalized using Reciprocal Rank Fusion (RRF) for optimal context relevance.
-4. **GraphRAG Multi-Hop Reasoning**: Leverages Neo4j to execute cypher queries for structural entity traversal, resolving complex multi-step logical questions by connecting disparate graph nodes.
-5. **Persistent Long-Term Memory**: Automatically extracts semantic facts and episodic turns per user, stored structurally in PostgreSQL. The frontend retrieves these to personalize UI responses across sessions.
-6. **Live Server-Sent Events (SSE)**: Streams LangGraph execution states, intermediate tool thoughts, and final markdown LLM tokens down to the Next.js frontend with zero buffering.
+### Backend
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Framework | FastAPI | Async REST API |
+| Language | Python 3.11 | Core application |
+| Orchestration | LangGraph StateGraph | Conditional DAG reasoning |
+| Vector DB | Pinecone | Dense 1024-d embeddings |
+| Graph DB | Neo4j 5 | Knowledge graph reasoning |
+| Relational DB | PostgreSQL 16 | User profiles, episodic memory |
+| Document Store | MongoDB | Knowledge document storage |
+| LLM Primary | NVIDIA NIM | Llama 3.3 Nemotron 49B |
+| LLM Fallback | Groq | Llama 3.1 8B Instant |
+
+### Frontend
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Framework | Next.js 15 | React 19 App Router |
+| Language | TypeScript | Type safety |
+| Styling | Tailwind CSS 4 | Modern glassmorphism UI |
+| State | Zustand | Client-side state management |
+| Data Fetching | TanStack Query | Server state caching |
+| Animation | Framer Motion | Micro-interactions |
+
+### Infrastructure
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Reverse Proxy | NGINX | Load balancing, SSE streaming |
+| Container | Docker | Application packaging |
+| Orchestration | Docker Compose | Multi-service deployment |
+| Platform | Railway | Cloud deployment |
+| Platform | Vercel | Frontend deployment |
 
 ---
 
-## 🧭 Project Roadmap & Completed Milestones
+## ⚙️ Core Components
 
-- ✅ **Milestone 1**: FastAPI Backend Architecture, Configuration Layer & Exception Handling
-- ✅ **Milestone 2**: Infrastructure & Database Connections (`asyncpg`, `motor`, `Neo4j`, PaaS `DATABASE_URL` routing)
-- ✅ **Milestone 3**: Repository Layer (`PostgresRepository`, `MongoRepository`, `Neo4jRepository`)
-- ✅ **Milestone 4**: Knowledge Ingestion Pipeline (`PDF`, `DOCX`, `Markdown`, `YAML` Chunking)
-- ✅ **Milestone 5**: Hybrid RAG Pipeline (`Pinecone` Dense 1024-d + `BM25` Sparse + `RRF` Fusion)
-- ✅ **Milestone 6**: Knowledge Repository & Relational Persistence Layer
-- ✅ **Milestone 7**: Pinecone Dense Retrieval Engine & Cross-Encoder Reranking
-- ✅ **Milestone 8**: GraphRAG Knowledge Graph (`Neo4j` Entity/Relationship Extraction)
-- ✅ **Milestone 9 & 10**: Retrieval Fusion (`Reciprocal Rank Fusion`) & Graph Structural Evaluation
-- ✅ **Milestone 11**: LangGraph Orchestration (`The Brain` — Conditional DAG Reasoning & Fallback Validation)
-- ✅ **Milestone 12**: Long-Term Memory System (`PostgreSQL` User Profiles & Ebbinghaus Forgetting Curves)
-- ✅ **Milestone 13**: Tool Execution Framework (`Decoupled WebSearch, SQL, Calculator & Cypher Tools`)
-- ✅ **Milestone 14**: Evaluation, Monitoring & Observability Platform (`11 Pillars + Dynamic Pricing`)
-- ✅ **Milestone 15**: Productization, Next.js 15 Cyber UI, Live SSE Streaming & Production Docker Deployment
+### LangGraph StateGraph Engine ("The Brain")
+
+The orchestration engine routes queries through 5 distinct pipelines:
+- `DIRECT_LLM` - Direct LLM response
+- `HYBRID_RAG` - Retrieval-augmented generation
+- `GRAPH_RAG` - Knowledge graph reasoning
+- `MEMORY_ENHANCED` - Memory-augmented response
+- `TOOLS_ENHANCED` - Tool-augmented response
+
+**Features:**
+- Conditional DAG routing based on intent confidence
+- LLM fallback chain (NVIDIA → Groq → Mock)
+- Server-Sent Events (SSE) streaming
+- Intermediate tool thought visualization
+
+### Hybrid RAG Pipeline
+
+- **Dense Retrieval**: Pinecone BAAI/bge-large-en-v1.5 (1024 dimensions)
+- **Sparse Retrieval**: BM25 keyword search
+- **Fusion**: Reciprocal Rank Fusion (RRF)
+
+### GraphRAG Engine
+
+- Neo4j Cypher query execution
+- Multi-hop entity traversal
+- Knowledge graph construction from documents
+- Entity relationship extraction
+
+### Long-Term Memory System
+
+- PostgreSQL-based user profiles
+- Ebbinghaus forgetting curve implementation
+- Semantic fact extraction
+- Episodic conversation logging
+
+### Tool Framework
+
+Decoupled tool execution:
+- **Web Search** - Real-time web queries
+- **SQL Executor** - Database queries
+- **Calculator** - Mathematical operations
+- **Cypher** - Graph database queries
 
 ---
 
-## 💻 Local Development Setup
+## 🔌 API Endpoints
 
-### Prerequisites:
-- **Python 3.11+**
-- **Node.js 20+ & npm**
-- **Docker & Docker Compose** (for local PostgreSQL and Neo4j databases)
+### Endpoint Overview
 
-### 1. Start Backend FastAPI Server
+| Prefix | Module | Description |
+|--------|--------|-------------|
+| `/api/v1/health` | Health | System health checks |
+| `/api/v1/auth` | Auth | Authentication |
+| `/api/v1/chat` | Chat | Chat and streaming |
+| `/api/v1/memory` | Memory | Long-term memory |
+| `/api/v1/knowledge` | Knowledge | Knowledge base |
+| `/api/v1/ingestion` | Ingestion | Document processing |
+| `/api/v1/graph` | Graph | Graph queries |
+| `/api/v1/retrieval` | Retrieval | Direct retrieval |
+| `/api/v1/tools` | Tools | Tool execution |
+| `/api/v1/evaluation` | Evaluation | Evaluation metrics |
+| `/api/v1/monitoring` | Monitoring | System metrics |
+| `/api/v1/admin` | Admin | Admin operations |
+| `/api/v1/upload` | Upload | File uploads |
+
+### Key Endpoints
+
+**Chat:**
+- `POST /api/v1/chat` - Send chat message
+- `POST /api/v1/chat/stream` - SSE streaming response
+- `GET /api/v1/chat/history` - Get chat history
+
+**Memory:**
+- `GET /api/v1/memory/user/{user_id}` - Get user memories
+- `POST /api/v1/memory` - Store memory
+- `DELETE /api/v1/memory/{memory_id}` - Delete memory
+
+**Knowledge:**
+- `GET /api/v1/knowledge` - List knowledge items
+- `POST /api/v1/knowledge` - Add knowledge item
+- `GET /api/v1/knowledge/search` - Search knowledge
+
+**Graph:**
+- `GET /api/v1/graph/query` - Execute Cypher query
+- `POST /api/v1/graph/entity` - Add entity
+- `GET /api/v1/graph/neighbors` - Get node neighbors
+
+**Monitoring:**
+- `GET /health` - Health check
+- `GET /api/v1/monitoring/metrics` - System metrics
+
+### API Documentation
+
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+- OpenAPI JSON: `http://localhost:8000/openapi.json`
+
+---
+
+## 💾 Data Storage
+
+### PostgreSQL (Profiles & Episodic Memory)
+```yaml
+Host: POSTGRES_HOST (default: localhost)
+Port: 5432
+Database: vyron_db
+Purpose: User profiles, conversation logs, semantic memories
+```
+
+### Neo4j (Knowledge Graph)
+```yaml
+URI: bolt://localhost:7687
+Database: neo4j
+Purpose: Graph entities, relationships, multi-hop queries
+```
+
+### Pinecone (Vector Storage)
+```yaml
+Environment: us-east-1
+Index: chatbot-vectors
+Dimension: 1024
+Namespace: default
+Purpose: Dense embeddings, semantic search
+```
+
+### MongoDB (Document Store)
+```yaml
+URI: mongodb://localhost:27017
+Database: chatbot_memory
+Purpose: Knowledge documents, file storage
+```
+
+---
+
+## 🔐 Configuration
+
+### Environment Variables
+
+Critical configuration (see `.env.example`):
+
+```env
+# Application
+APP_NAME="Memory-Augmented Chatbot"
+APP_VERSION="0.1.0"
+APP_ENV="production"
+DEBUG=false
+SECRET_KEY="your-super-secret-key"
+
+# AI Models
+CHAT_MODEL="nvidia/llama-3.3-nemotron-super-49b-v1.5"
+EMBEDDING_MODEL="BAAI/bge-large-en-v1.5"
+
+# API Keys
+NVIDIA_API_KEY="your-nvidia-key"
+GROQ_API_KEY="your-groq-key"
+PINECONE_API_KEY="your-pinecone-key"
+
+# Storage
+POSTGRES_URL="postgresql://user:pass@host:5432/db"
+NEO4J_URI="bolt://host:7687"
+NEO4J_PASSWORD="your-password"
+MONGODB_URI="mongodb://localhost:27017"
+```
+
+### Feature Flags
+
+```env
+ENABLE_MEMORY=true
+ENABLE_GRAPH=true
+ENABLE_TOOLS=true
+ENABLE_HYBRID_RAG=true
+ENABLE_RERANKER=true
+ENABLE_EVALUATION=false
+```
+
+---
+
+## 💻 Development Setup
+
+### Prerequisites
+- Python 3.11+
+- Node.js 20+
+- Docker & Docker Compose
+
+### Backend
 ```bash
-# Clone repository & navigate to root
-cd Memory-Argumented-Chatbot
-
-# Install Python dependencies
 pip install -r requirements.txt
-
-# Start asynchronous server with hot-reload
 python main.py
-# Or directly via uvicorn:
+# or
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
-*API Documentation available at: `http://localhost:8000/docs` & `http://localhost:8000/openapi.json`*
 
-### 2. Start Frontend Next.js 15 Application
+### Frontend
 ```bash
-# Open a new terminal and navigate to frontend directory
 cd frontend
-
-# Install Node modules
 npm install
-
-# Start Next.js development server on port 3000
 npm run dev
 ```
-*Access UI at: `http://localhost:3000`*
+
+### Full Stack (Docker)
+```bash
+docker compose up -d
+```
 
 ---
 
-## 🐳 Production Containerization & Deployment
+## 🚀 Deployment
 
-We provide a complete multi-stage container orchestration suite powered by **Docker Compose** and **NGINX**.
-
+### Docker Compose (Production Stack)
 ```bash
-# Build and deploy all 5 enterprise services in background:
-# (FastAPI Backend, Next.js Frontend, NGINX Reverse Proxy, PostgreSQL, Neo4j)
 docker compose up -d --build
 ```
 
-### Services & Port Mapping:
-- **NGINX Reverse Proxy**: `http://localhost` (Port `80`) — Routes `/api/v1/*` with SSE unbuffered streaming & `/` to frontend.
-- **Next.js Standalone Frontend**: Port `3000` (Internal Docker network / exposed for testing).
-- **FastAPI Asynchronous Backend**: Port `8000` (4 Uvicorn worker processes).
-- **PostgreSQL 16 Database**: Port `5432` (`vyron_db`).
-- **Neo4j 5 Knowledge Graph**: Port `7474` (Browser UI) & Port `7687` (Bolt binary protocol).
+| Service | Port | Description |
+|---------|------|-------------|
+| nginx | 80 | Reverse proxy |
+| frontend | 3000 | Next.js app |
+| backend | 8000 | FastAPI app |
+
+### Railway Deployment
+1. Connect GitHub repository
+2. Railway auto-detects `Dockerfile`
+3. Set environment variables in dashboard
+4. Deploy with health check on `/health`
+
+### Vercel Deployment (Frontend)
+1. Import `frontend/` directory
+2. Set environment variables:
+   - `NEXT_PUBLIC_API_BASE_URL`
+3. Deploy automatically
 
 ---
 
-## 📚 Documentation
+## 🔒 Security
 
-For complete technical documentation including architecture diagrams, API reference, configuration details, and deployment guides, see: **[Vyron_AI_Documentation.md](./Vyron_AI_Documentation.md)**
+### Secrets Management
+- Never commit `.env` files
+- Use environment variables for all secrets
+- Rotate API keys regularly
+
+### API Security
+- CORS configured for specific origins
+- Request ID tracking for audit logs
+- Rate limiting (recommended for production)
+
+### Database Security
+- Use strong passwords
+- Enable SSL connections in production
+- Regular backups
 
 ---
 
-## 🧪 CI/CD & Automated Verification
+## 🧪 CI/CD
 
-The project includes automated GitHub Actions CI/CD workflows (`.github/workflows/deploy.yml`) executing on every commit:
-1. **Python Contract Verification**: Runs `python scratch/test_frontend_api_contract.py` using FastAPI `TestClient` to ensure OpenAPI schemas match frontend requirements.
-2. **Next.js Production Compilation**: Executes `npm run build` inside `frontend/` verifying zero TypeScript or React compilation errors.
-3. **Docker Multi-Stage Integrity Check**: Verifies image builds for the backend and frontend modules.
+Automated GitHub Actions workflows (`.github/workflows/deploy.yml`):
+
+1. **Python Contract Verification**: Runs `python scratch/test_frontend_api_contract.py` using FastAPI `TestClient`
+2. **Next.js Production Compilation**: Executes `npm run build` in `frontend/`
+3. **Docker Multi-Stage Integrity Check**: Verifies image builds
+
+---
+
+## 🧭 Roadmap & Completed Milestones
+
+- ✅ Milestone 1: FastAPI Backend Architecture, Configuration Layer & Exception Handling
+- ✅ Milestone 2: Infrastructure & Database Connections
+- ✅ Milestone 3: Repository Layer (PostgresRepository, MongoRepository, Neo4jRepository)
+- ✅ Milestone 4: Knowledge Ingestion Pipeline (PDF, DOCX, Markdown, YAML)
+- ✅ Milestone 5: Hybrid RAG Pipeline (Pinecone Dense + BM25 + RRF)
+- ✅ Milestone 6: Knowledge Repository & Relational Persistence Layer
+- ✅ Milestone 7: Pinecone Dense Retrieval Engine & Cross-Encoder Reranking
+- ✅ Milestone 8: GraphRAG Knowledge Graph (Neo4j)
+- ✅ Milestone 9 & 10: Retrieval Fusion (RRF) & Graph Structural Evaluation
+- ✅ Milestone 11: LangGraph Orchestration (The Brain)
+- ✅ Milestone 12: Long-Term Memory System (PostgreSQL)
+- ✅ Milestone 13: Tool Execution Framework
+- ✅ Milestone 14: Evaluation, Monitoring & Observability Platform
+- ✅ Milestone 15: Productization, Next.js 15, Live SSE & Docker Deployment
 
 ---
 
