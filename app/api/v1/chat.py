@@ -829,12 +829,20 @@ async def process_chat_query(
     if attachment_context:
         enriched_query = f"I have uploaded the following files. Please use their contents to answer my question.\n\n{attachment_context}\n\n---\n\nMy question: {payload.query}"
         logger.info(f"Enriched query with {len(payload.file_ids or []) + len(payload.image_ids or [])} attachment(s)")
-    
-    result: WorkflowResponse = await orchestration_pipeline.process_query(
-        user_query=enriched_query,
-        conversation_id=conversation_id,
-        user_id=user_id
-    )
+
+    try:
+        result: WorkflowResponse = await orchestration_pipeline.process_query(
+            user_query=enriched_query,
+            conversation_id=conversation_id,
+            user_id=user_id
+        )
+    except Exception as process_exc:
+        logger.error(f"Chat processing failed: {type(process_exc).__name__}: {process_exc}", exc_info=True)
+        return success_response(
+            data={"response": f"I apologize, but I encountered an issue processing your request. Please try again."},
+            message=f"Processing error: {type(process_exc).__name__}",
+            request_id=request_id,
+        )
     
     # Guardrail: Validate output safety
     if settings.guardrails and settings.guardrails.enabled and result.response:

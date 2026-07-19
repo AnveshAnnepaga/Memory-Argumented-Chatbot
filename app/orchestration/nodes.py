@@ -585,69 +585,45 @@ async def llm_generation_node(state: WorkflowState) -> Dict[str, Any]:
             {"role": "user", "content": final_prompt},
         ]
 
-        # Only pass web_search tool if Phase A didn't already fetch results
-        # Note: Some models like NVIDIA Nemotron may not fully support tool calling
         tool_ctx = state.get("retrieved_tool_context", "").strip()
         already_searched = bool(tool_ctx and tool_ctx not in ("[Tool System Offline: Execution failed]", ""))
         gen_kwargs: Dict[str, Any] = {"temperature": 0.5, "max_tokens": 1500}
-        # Disable tools for now as NVIDIA NIM may not fully support them
-        # if not already_searched:
-        #     gen_kwargs["tools"] = [_WEB_SEARCH_TOOL]
 
-        res = await llm_manager.generate(
-            messages=messages,
-            **gen_kwargs,
-        )
+        logger.info(f"LLM call starting - provider will use active primary")
+
+        res = None
+        try:
+            res = await llm_manager.generate(
+                messages=messages,
+                **gen_kwargs,
+            )
+            logger.info(f"LLM call completed - response type: {type(res)}")
+        except Exception as llm_err:
+            logger.error(f"LLM generate call failed: {type(llm_err).__name__}: {llm_err}")
+            raise
+
         if not isinstance(res, dict):
-            raise ValueError(f"LLM returned unexpected response type: {type(res)}")
+            raise ValueError(f"LLM returned unexpected response type: {type(res)}, value: {repr(res)[:200]}")
 
+        content = res.get("content", "")
+        if content is None:
+            content = ""
+        llm_output = content.strip()
+
+        # Note: Tool calling is disabled, so tool_calls will be None
         tool_calls = res.get("tool_calls")
 
         if tool_calls:
-            # LLM requested web search
-            for tc in tool_calls:
-                if tc.get("function", {}).get("name") == "web_search":
-                    args = json.loads(tc["function"]["arguments"])
-                    search_query = args.get("query", final_prompt)
-                    logger.info(f"LLM triggered web_search tool for: '{search_query}'")
-                    search_result = await _execute_web_search(search_query)
-
-                    # Append assistant message with tool_calls + tool result
-                    messages.append({
-                        "role": "assistant",
-                        "content": None,
-                        "tool_calls": [{
-                            "id": tc["id"],
-                            "type": "function",
-                            "function": {"name": "web_search", "arguments": tc["function"]["arguments"]}
-                        }]
-                    })
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tc["id"],
-                        "content": search_result,
-                    })
-
-                    # Second LLM call with search results
-                    res2 = await llm_manager.generate(
-                        messages=messages,
-                        temperature=0.3,
-                        max_tokens=1500,
-                    )
-                    llm_output = (res2.get("content", "") or "").strip()
-                    logger.info(f"LLM generated response with web search ({len(llm_output.split())} words) in {(time.perf_counter()-t0)*1000:.1f}ms.")
-                else:
-                    llm_output = (res.get("content", "") or "").strip()
-        else:
+            logger.info(f"LLM returned tool_calls unexpectedly: {tool_calls}")
             llm_output = (res.get("content", "") or "").strip()
+        else:
+            logger.debug("LLM response received without tool calls")
 
         llm_output = _post_process(llm_output)
 
         # Reject empty output
-        if not llm_output or llm_output.startswith("[Mock Completion"):
-            raise ValueError(
-                "LLM produced empty or mock output; building a clean synthesized reply."
-            )
+        if not llm_output:
+            raise ValueError("LLM produced empty output")
 
         logger.info(
             f"LLM generated response ({len(llm_output.split())} words) in "
