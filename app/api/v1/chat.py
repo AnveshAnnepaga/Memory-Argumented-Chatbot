@@ -933,11 +933,24 @@ async def stream_chat_query(
             }) + "\n\n"
             await asyncio.sleep(0.03)
             
-            result: WorkflowResponse = await orchestration_pipeline.process_query(
-                user_query=enriched_query,
-                conversation_id=conversation_id,
-                user_id=user_id
+            # Start background task to allow for keep-alive pings preventing 502 proxy timeouts
+            task = asyncio.create_task(
+                orchestration_pipeline.process_query(
+                    user_query=enriched_query,
+                    conversation_id=conversation_id,
+                    user_id=user_id
+                )
             )
+            
+            # Yield ping events every 15 seconds while waiting
+            while not task.done():
+                try:
+                    # shield() prevents the task from being cancelled if wait_for times out
+                    await asyncio.wait_for(asyncio.shield(task), timeout=15.0)
+                except asyncio.TimeoutError:
+                    yield "event: ping\ndata: {}\n\n"
+            
+            result: WorkflowResponse = task.result()
             
             # Guardrail: Validate output safety
             if settings.guardrails and settings.guardrails.enabled and result.response:

@@ -587,17 +587,23 @@ async def llm_generation_node(state: WorkflowState) -> Dict[str, Any]:
 
         tool_ctx = state.get("retrieved_tool_context", "").strip()
         already_searched = bool(tool_ctx and tool_ctx not in ("[Tool System Offline: Execution failed]", ""))
-        gen_kwargs: Dict[str, Any] = {"temperature": 0.5, "max_tokens": 1500}
+        gen_kwargs: Dict[str, Any] = {"temperature": 0.3, "max_tokens": 500}
 
-        logger.info(f"LLM call starting - provider will use active primary")
+        logger.info(f"Making LLM call via {llm_manager.active_provider_key}")
+        logger.info(f"Prompt length: {len(final_prompt)} chars")
 
         res = None
         try:
-            res = await llm_manager.generate(
-                messages=messages,
-                **gen_kwargs,
+            # Add timeout to prevent hanging
+            import asyncio
+            res = await asyncio.wait_for(
+                llm_manager.generate(messages=messages, **gen_kwargs),
+                timeout=30.0
             )
             logger.info(f"LLM call completed - response type: {type(res)}")
+        except asyncio.TimeoutError:
+            logger.error(f"LLM call timed out after 30 seconds")
+            raise ValueError("LLM call timed out")
         except Exception as llm_err:
             logger.error(f"LLM generate call failed: {type(llm_err).__name__}: {llm_err}")
             raise

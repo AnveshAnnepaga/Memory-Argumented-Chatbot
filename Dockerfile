@@ -13,6 +13,9 @@ RUN apt-get update && \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Pre-download the SentenceTransformer embeddings model to prevent first-query HTTP timeouts
+RUN python -c "import os; os.environ['TRANSFORMERS_NO_TF'] = '1'; from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-large-en-v1.5')"
+
 COPY app/ ./app/
 COPY main.py ./
 

@@ -5,6 +5,7 @@ import os
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 from app.rag.schemas import ChunkSchema, EmbeddingVector
+from app.core.config import settings
 
 logger = logging.getLogger("rag.embedder")
 
@@ -40,7 +41,14 @@ class BGEEmbedder:
     ):
         self.model_name = model_name
         self.dimension = dimension
-        self.use_stub = use_stub
+        
+        # Override use_stub if explicitly disabled via settings
+        if settings.ai and settings.ai.embeddings.disable_local:
+            logger.info("Local embeddings explicitly disabled via settings. Using stub/cloud only.")
+            self.use_stub = True
+        else:
+            self.use_stub = use_stub
+            
         self._model: Optional[Any] = None
         self._cache: Dict[str, List[float]] = {}
 

@@ -101,6 +101,21 @@ def create_app() -> FastAPI:
             request_id=request_id,
         )
 
+    # 7. Simple test endpoint to verify basic functionality
+    @application.get("/test", response_model=APIResponse[dict], tags=["Testing"], summary="Basic Test Endpoint")
+    async def test_endpoint(request_id: str = Depends(get_request_id)):
+        """Simple test endpoint that doesn't use LLM to verify basic app functionality."""
+        from app.ai.llm.llm_manager import llm_manager
+        return success_response(
+            data={
+                "test": "ok",
+                "llm_provider": llm_manager.active_provider_key,
+                "llm_initialized": llm_manager._is_initialized,
+            },
+            message="Test endpoint working",
+            request_id=request_id,
+        )
+
     logger.info(f"FastAPI Application initialized cleanly via create_app() [Prefix: {settings.API_PREFIX}]")
     return application
 

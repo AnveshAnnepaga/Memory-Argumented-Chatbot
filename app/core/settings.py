@@ -101,6 +101,7 @@ class EmbeddingConfig(BaseModel):
     dimension: int = DEFAULT_EMBEDDING_DIMENSION
     batch_size: int = 32
     normalize: bool = True
+    disable_local: bool = False
 
 
 class PromptConfig(BaseModel):
@@ -321,6 +322,7 @@ class Settings(BaseSettings):
     RETRIEVAL_CHUNK_OVERLAP: int = DEFAULT_CHUNK_OVERLAP
     RETRIEVAL_BM25_WEIGHT: float = DEFAULT_BM25_WEIGHT
     RETRIEVAL_DENSE_WEIGHT: float = DEFAULT_DENSE_WEIGHT
+    DISABLE_LOCAL_EMBEDDINGS: bool = False
 
     # Memory
     MEMORY_CONVERSATION_WINDOW: int = DEFAULT_CONVERSATION_WINDOW
@@ -447,7 +449,10 @@ class Settings(BaseSettings):
             temperature=self.NVIDIA_TEMPERATURE,
             max_tokens=self.NVIDIA_MAX_TOKENS,
         )
-        embeddings_cfg = EmbeddingConfig(dimension=self.PINECONE_DIMENSION)
+        embeddings_cfg = EmbeddingConfig(
+            dimension=self.PINECONE_DIMENSION,
+            disable_local=self.DISABLE_LOCAL_EMBEDDINGS
+        )
         prompt_cfg = PromptConfig()
         self.ai = AIConfig(
             models=models_cfg,
