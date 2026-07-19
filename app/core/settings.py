@@ -206,12 +206,28 @@ class PostgresConfig(BaseModel):
     pool_size: int = 10
     echo: bool = False
 
+    url: Optional[str] = None
+
     @property
     def sync_url(self) -> str:
+        if self.url:
+            url = self.url
+            if url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql+psycopg://", 1)
+            elif url.startswith("postgresql://") and "psycopg" not in url:
+                url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+            return url
         return f"postgresql+psycopg://{self.user}:{self.password}@{self.host}:{self.port}/{self.db_name}"
 
     @property
     def async_url(self) -> str:
+        if self.url:
+            url = self.url
+            if url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql+psycopg://", 1)
+            elif url.startswith("postgresql://") and "psycopg" not in url:
+                url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+            return url
         return f"postgresql+psycopg://{self.user}:{self.password}@{self.host}:{self.port}/{self.db_name}"
 
 
@@ -363,6 +379,7 @@ class Settings(BaseSettings):
     GUARDRAILS_RATE_LIMIT_PER_HOUR: int = 1000
 
     # Storage Databases
+    DATABASE_URL: Optional[str] = None
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = DEFAULT_POSTGRES_PORT
     POSTGRES_USER: str = "postgres"
@@ -371,6 +388,7 @@ class Settings(BaseSettings):
     POSTGRES_POOL_SIZE: int = 10
     POSTGRES_ECHO: bool = False
 
+    MONGO_URL: Optional[str] = None
     MONGODB_URI: str = f"mongodb://localhost:{DEFAULT_MONGO_PORT}"
     MONGODB_DB_NAME: str = "chatbot_memory"
     MONGODB_MAX_CONNECTIONS: int = 100
@@ -381,6 +399,7 @@ class Settings(BaseSettings):
     PINECONE_NAMESPACE: str = "default"
     PINECONE_DIMENSION: int = DEFAULT_EMBEDDING_DIMENSION
 
+    NEO4J_URL: Optional[str] = None
     NEO4J_URI: str = f"bolt://localhost:{DEFAULT_NEO4J_PORT}"
     NEO4J_USER: str = "neo4j"
     NEO4J_USERNAME: str = "neo4j"
@@ -509,6 +528,7 @@ class Settings(BaseSettings):
             rate_limit_per_hour=self.GUARDRAILS_RATE_LIMIT_PER_HOUR,
         )
         sql_cfg = PostgresConfig(
+            url=self.DATABASE_URL,
             host=self.POSTGRES_HOST,
             port=self.POSTGRES_PORT,
             user=self.POSTGRES_USER,
@@ -518,7 +538,7 @@ class Settings(BaseSettings):
             echo=self.POSTGRES_ECHO,
         )
         mongo_cfg = MongoConfig(
-            uri=self.MONGODB_URI,
+            uri=self.MONGO_URL or self.MONGODB_URI,
             db_name=self.MONGODB_DB_NAME,
             max_connections=self.MONGODB_MAX_CONNECTIONS,
         )
@@ -530,7 +550,7 @@ class Settings(BaseSettings):
             dimension=self.PINECONE_DIMENSION,
         )
         graph_cfg = Neo4jConfig(
-            uri=self.NEO4J_URI,
+            uri=self.NEO4J_URL or self.NEO4J_URI,
             user=self.NEO4J_USER,
             username=self.NEO4J_USERNAME or self.NEO4J_USER,
             password=self.NEO4J_PASSWORD,
