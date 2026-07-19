@@ -104,7 +104,7 @@ class LLMProviderManager(BaseInfrastructureManager):
         target_key = provider_key or self.active_provider_key
         provider = self.get_provider(target_key)
         try:
-            return await provider.generate(
+            res = await provider.generate(
                 messages=messages,
                 model=model,
                 temperature=temperature,
@@ -112,6 +112,10 @@ class LLMProviderManager(BaseInfrastructureManager):
                 timeout=timeout,
                 **kwargs,
             )
+            content = res.get("content", "")
+            if not content.strip() and not res.get("tool_calls"):
+                raise ValueError("LLM generated an empty response.")
+            return res
         except Exception as exc:
             fallback_chain = ["groq", "mock"]
             for fb_key in fallback_chain:
@@ -124,7 +128,7 @@ class LLMProviderManager(BaseInfrastructureManager):
                     f"LLM generation on provider '{target_key}' failed ({exc}). Falling back to '{fb_key}' provider..."
                 )
                 try:
-                    return await fb_provider.generate(
+                    res = await fb_provider.generate(
                         messages=messages,
                         model=model,
                         temperature=temperature,
@@ -132,6 +136,10 @@ class LLMProviderManager(BaseInfrastructureManager):
                         timeout=timeout,
                         **kwargs,
                     )
+                    content = res.get("content", "")
+                    if not content.strip() and not res.get("tool_calls"):
+                        raise ValueError("LLM generated an empty response.")
+                    return res
                 except Exception:
                     continue
             raise GroqException(f"LLM generation failed across all available providers: {exc}") from exc
