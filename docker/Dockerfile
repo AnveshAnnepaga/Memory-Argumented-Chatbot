@@ -26,11 +26,8 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY app/ ./app/
-COPY config/ ./config/
-COPY data/ ./data/
-COPY evaluation/ ./evaluation/
-COPY knowledge/ ./knowledge/
 COPY main.py ./
+COPY requirements.txt ./
 
 RUN chown -R backenduser:backenduser /app
 USER backenduser

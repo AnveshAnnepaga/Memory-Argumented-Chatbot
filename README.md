@@ -151,6 +151,12 @@ docker compose up -d --build
 
 ---
 
+## 📚 Documentation
+
+For complete technical documentation including architecture diagrams, API reference, configuration details, and deployment guides, see: **[Vyron_AI_Documentation.md](./Vyron_AI_Documentation.md)**
+
+---
+
 ## 🧪 CI/CD & Automated Verification
 
 The project includes automated GitHub Actions CI/CD workflows (`.github/workflows/deploy.yml`) executing on every commit:
