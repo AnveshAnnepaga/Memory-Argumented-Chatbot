@@ -57,8 +57,8 @@ export default function HomePage() {
         <div className="px-6 sm:px-12 max-w-6xl mx-auto w-full">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center overflow-hidden">
-                <img src="/vyron-logo.png" alt="Vyron" className="w-5 h-5 object-contain" />
+              <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
+                <img src="/vyron-logo.png" alt="Vyron" className="w-full h-full object-contain rounded-lg" />
               </div>
               <span className="text-[15px] font-bold text-primary">Vyron AI</span>
             </div>
