@@ -605,7 +605,8 @@ async def llm_generation_node(state: WorkflowState) -> Dict[str, Any]:
             logger.error(f"LLM call timed out after 30 seconds")
             raise ValueError("LLM call timed out")
         except Exception as llm_err:
-            logger.error(f"LLM generate call failed: {type(llm_err).__name__}: {llm_err}")
+            import traceback
+            logger.error(f"LLM generate call failed: {type(llm_err).__name__}: {llm_err}\n{traceback.format_exc()}")
             raise
 
         if not isinstance(res, dict):
@@ -625,11 +626,16 @@ async def llm_generation_node(state: WorkflowState) -> Dict[str, Any]:
         else:
             logger.debug("LLM response received without tool calls")
 
+        original_output = llm_output
         llm_output = _post_process(llm_output)
 
         # Reject empty output
         if not llm_output:
-            raise ValueError("LLM produced empty output")
+            if original_output.strip():
+                logger.warning("Post-processing stripped entire LLM output. Using original output.")
+                llm_output = original_output.strip()
+            else:
+                raise ValueError("LLM produced empty output")
 
         logger.info(
             f"LLM generated response ({len(llm_output.split())} words) in "
