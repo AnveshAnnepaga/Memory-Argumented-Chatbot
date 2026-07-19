@@ -10,6 +10,7 @@ from app.core.constants import (
     DEFAULT_APP_BUILD,
     DEFAULT_APP_DESCRIPTION,
     DEFAULT_API_PREFIX,
+    DEFAULT_APP_URL,
     DEFAULT_POSTGRES_PORT,
     DEFAULT_MONGO_PORT,
     DEFAULT_NEO4J_PORT,
@@ -67,6 +68,7 @@ class AppConfig(BaseModel):
     debug: bool = True
     api_prefix: str = DEFAULT_API_PREFIX
     secret_key: str = "change-me-in-production-super-secret-key"
+    app_url: str = DEFAULT_APP_URL
 
     @field_validator("secret_key")
     @classmethod
@@ -274,12 +276,13 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # Flat Environment Variables
+# Flat Environment Variables
     APP_NAME: str = DEFAULT_APP_NAME
     APP_VERSION: str = DEFAULT_APP_VERSION
     APP_BUILD_VERSION: str = DEFAULT_APP_BUILD
     APP_DESCRIPTION: str = DEFAULT_APP_DESCRIPTION
     APP_ENV: EnvironmentType = EnvironmentType.DEVELOPMENT
+    APP_URL: str = ""
     DEBUG: bool = True
     API_PREFIX: str = DEFAULT_API_PREFIX
     SECRET_KEY: str = "change-me-in-production-super-secret-key"
@@ -415,6 +418,7 @@ class Settings(BaseSettings):
             debug=self.DEBUG,
             api_prefix=self.API_PREFIX,
             secret_key=self.SECRET_KEY,
+            app_url=self.APP_URL,
         )
         self.feature_flags = FeatureFlagsConfig(
             enable_memory=self.ENABLE_MEMORY,

@@ -25,6 +25,7 @@ DEFAULT_APP_VERSION = "0.1.0"
 DEFAULT_APP_BUILD = "2026.07.01"
 DEFAULT_APP_DESCRIPTION = "Advanced Memory-Augmented AI Assistant powered by Knowledge Graphs and Hybrid RAG."
 DEFAULT_API_PREFIX = "/api/v1"
+DEFAULT_APP_URL = "https://vyronai-six.vercel.app"
 
 # Connection timeouts & limits
 DEFAULT_TIMEOUT_SECONDS = 30
